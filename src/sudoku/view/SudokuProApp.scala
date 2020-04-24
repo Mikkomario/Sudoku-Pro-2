@@ -60,9 +60,9 @@ object SudokuProApp extends App
 	 */
 	
 	val sudoku = SudokuState(Vector(
-		"6xxx4xxx2", "x9xxx78xx", "xx71xxx5x",
-		"8xxxxxx3x", "xxxx7xxxx", "x9xxxxxx8",
-		"x5xxx49xx", "xx25xxx3x", "3xxx2xxx4").mapWithIndex { (str, index) =>
+		"x2xxxxxx6", "18x3x6xx4", "x3xxxxxxx",
+		"xxx1x5x94", "5xxxxxxx2", "41x2x8xxx",
+		"xxxxxxx6x", "2xx8x5x31", "7xxxxxx2x").mapWithIndex { (str, index) =>
 		val x = index % 3 * 3
 		val y = index / 3 * 3
 		stringToGrid(str, Position(x, y))

@@ -22,7 +22,7 @@ import scala.concurrent.duration.FiniteDuration
 object SudokuVC
 {
 	private val highlightDuration = 3.seconds
-	private val numberHighlightChangeDuration = 0.5.seconds
+	private val numberHighlightChangeDuration = 0.25.seconds
 }
 
 /**

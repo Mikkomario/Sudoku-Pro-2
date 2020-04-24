@@ -66,6 +66,12 @@ case class SudokuState(grids: Vector[Grid]) extends GridLike[Grid, SudokuState]
 	// OTHER	-----------------------
 	
 	/**
+	 * @param position Target position
+	 * @return Slot at specified position
+	 */
+	def slotAt(position: Position) = slotsView.rows(position.y)(position.x)
+	
+	/**
 	 * @param axis Targeted axis
 	 * @return Slot lines along the specified axis
 	 */
