@@ -1,20 +1,19 @@
 package sudoku.controller
 
-import sudoku.model.SolvableGroupType.{Column, Row}
-import sudoku.model.SudokuState
+import sudoku.model.{SolveResult, SudokuState}
 import utopia.flow.util.CollectionExtensions._
 import utopia.genesis.shape.Axis2D
 
 /**
  * Checks whether there are half-number pairs (single pairs) inside a single line in a grid.
- * That number can't appear anywhere else in the grid. (Eg. if number 6 must be in the last column in first grid row,
+ * That means that the number can't appear anywhere else in the grid.
+ * (Eg. if number 6 must be in the last column in first grid row,
  * it can't be on the other 2 columns in that grid row)
  * @author Mikko Hilpinen
  * @since 24.4.2020, v1
  */
-object RestrictNumberToLine // extends SolveAlgorithm
+object RestrictNumberToLine extends SolveAlgorithm
 {
-	/*
 	private implicit val languageCode: String = "en"
 	
 	override def name = "Restrict column and row half-places in grid"
@@ -22,33 +21,48 @@ object RestrictNumberToLine // extends SolveAlgorithm
 	override def apply(sudoku: SudokuState) =
 	{
 		sudoku.trySolveNextGrid { grid =>
-			// Finds half-number pairs for columns and rows within this grid
-			// Axis -> [Indices on axis -> [half numbers]]
+			// Finds the two required positions for each restricted number
+			// Number -> [Only allowed positions]
 			val restrictions = Axis2D.values.flatMap { axis =>
 				val lines = grid.lines(axis)
-				val restrictedNumbers = lines.mapWithIndex { (line, index) =>
-					val allHalfNumbers = line.flatMap { _.halfPlacesFor(axis) }
-					val uniqueHalfNumbers = allHalfNumbers.toSet
-					val doubleHalfNumbers = uniqueHalfNumbers.filter { number => allHalfNumbers.count { _ == number } > 1 }
+				lines.flatMap { line =>
+					val allHalfNumbersWithPositions = line.flatMap { slot => slot.halfPlacesFor(axis).map { _ -> slot.position } }
+					val uniqueHalfNumbers = allHalfNumbersWithPositions.map { _._1 }.toSet
+					val doubleHalfNumbers = uniqueHalfNumbers.filter { number => allHalfNumbersWithPositions.count { _._1 == number } > 1 }
 					
 					if (doubleHalfNumbers.nonEmpty)
-						Some(index -> doubleHalfNumbers)
+					{
+						// println(s"Found double half-numbers in grid ${grid.position}: [${doubleHalfNumbers.mkString(", ")}]")
+						allHalfNumbersWithPositions.filter { case (number, _) => doubleHalfNumbers.contains(number) }
+					}
 					else
-						None
-				}.flatten
-				
-				if (restrictedNumbers.nonEmpty)
-					Some(axis -> restrictedNumbers)
-				else
-					None
-			}
+						Vector()
+				}
+			}.asMultiMap
 			
 			if (restrictions.nonEmpty)
 			{
-				val restrictionsForSlots =
+				// Next applies the limitations. Found half-numbers cannot exist anywhere else than on the positions they were
+				// Found from
+				grid.trySolveFlatMap { slot =>
+					val restrictedNumbers = restrictions.filterNot { _._2.contains(slot.position) }.keySet
+					if (restrictedNumbers.nonEmpty)
+					{
+						//println(s"Restricting slot ${slot.position} to [${restrictedNumbers.mkString(", ")}]")
+						Some(slot.withNotAllowed(restrictedNumbers))
+					}
+					else
+						None
+				}
 			}
-			???
+			else
+				None
+		} match
+		{
+			case Some(result) =>
+				// Can't generate affecting slots at this time
+				SolveResult.success(result._1, result._2._2.toSet, description = Some(name))
+			case None => SolveResult.failure(sudoku)
 		}
-		???
-	}*/
+	}
 }

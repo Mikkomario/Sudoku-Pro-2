@@ -164,4 +164,13 @@ trait SolvableGroup[A <: Solvable, +Repr] extends Solvable
 		else
 			Some(newItem -> newItem)
 	}
+	
+	/**
+	 * Tries to add some information to all items in this group where it is possible. Checks for equality before counting
+	 * changes.
+	 * @param solve A solving function that produces a modified copy of an item (or none)
+	 * @return A new version of this group + list of changed items. None if no changes were made.
+	 */
+	def trySolveFlatMap(solve: A => Option[A]): Option[(Repr, Vector[A])] = trySolve[A] { item =>
+		solve(item).filterNot { _ == item }.map { newItem => newItem -> newItem } }
 }
