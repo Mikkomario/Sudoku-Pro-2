@@ -41,4 +41,19 @@ case class Grid(slots: Vector[Slot]) extends GridLike[Slot, Grid] with FullSlots
 	override def items = slots
 	
 	override def repr = this
+	
+	
+	// OTHER	-------------------------------
+	
+	/**
+	 * Checks whether this grid contains the specified position
+	 * @param position A position
+	 * @return Whether the position is in this grid
+	 */
+	def containsPosition(position: Position) =
+	{
+		val min = slots.head.position
+		val max = slots.last.position
+		position.x >= min.x && position.x <= max.x && position.y >= min.y && position.y <= max.y
+	}
 }
