@@ -1,0 +1,76 @@
+package sudoku.test
+
+import sudoku.controller.Solver
+import utopia.flow.util.CollectionExtensions._
+import utopia.flow.util.TimeExtensions._
+import sudoku.model.{Grid, Position, Slot, SolveResult, SudokuState}
+import utopia.flow.util.WaitUtils
+
+/**
+ * Attempts to solve a sudoku (non-visual)
+ * @author Mikko Hilpinen
+ * @since 22.4.2020, v1
+ */
+object SolveTest extends App
+{
+	// Creates a test sudoku
+	def stringToGrid(str: String, gridPosition: Position) =
+	{
+		val slots = str.map { c => if (c.isDigit) Some(c.asDigit) else None }.mapWithIndex { (num, i) =>
+			val x = i % 3 + gridPosition.x
+			val y = i / 3 + gridPosition.y
+			Slot(Position(x, y), num)
+		}.toVector
+		Grid(slots)
+	}
+	val sudoku = SudokuState(Vector(
+		"xx2xx4x9x", "xxxx1xx54", "3xxxx6xx8",
+		"xxx93x4x7", "x2xxxxx6x", "7x4x52xxx",
+		"6xx3xxxx9", "17xx9xxxx", "x3x2xx5xx").mapWithIndex { (str, index) =>
+		val x = index % 3 * 3
+		val y = index / 3 * 3
+		stringToGrid(str, Position(x, y))
+	}.toVector)
+	
+	println(s"Start:\n${sudoku.ascii}")
+	
+	val slotView = sudoku.slotsView
+	
+	val testGrid = sudoku.items.head
+	assert(Grid.fromRows(testGrid.rows.toVector) == testGrid)
+	assert(Grid.fromColumns(testGrid.columns) == testGrid)
+	
+	/*
+	println("Rows:")
+	println(slotView.rows.map { _.map { _.ascii }.mkString("|") }.mkString("\n"))
+	
+	println("Grid columns:")
+	println(sudoku.columns.map { _.map { _.asciiRows.mkString("\n") }.mkString("\n\n") }.mkString("\n-------\n"))
+	
+	println("Columns:")
+	println(slotView.columns.map { _.map { _.ascii }.mkString("|") }.mkString("\n"))
+	*/
+	
+	// Attempts to solve the sudoku
+	val waitLock = new AnyRef
+	var lastResult = SolveResult.failure(sudoku)
+	var stepIndex = 0
+	do
+	{
+		stepIndex += 1
+		lastResult = Solver(lastResult.newState)
+		if (lastResult.wasSuccess)
+		{
+			println(s"$stepIndex Success; ${lastResult.description.map { _.string }.getOrElse("") }; ${
+				lastResult.modifiedSlots.toVector.sortBy { _.availableNumbers.size }.mkString(", ") }.")
+			// println(lastResult.newState.ascii)
+		}
+		else
+			println("Failure")
+		
+		WaitUtils.wait(0.2.seconds, waitLock)
+	}
+	while (lastResult.wasSuccess && !lastResult.newState.isSolved)
+	
+	println(s"End:\n${lastResult.newState.ascii}")
+}
