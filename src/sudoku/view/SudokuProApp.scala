@@ -54,15 +54,16 @@ object SudokuProApp extends App
 		Grid(slots)
 	}
 	/*
-	"xx2xx4x9x", "xxxx1xx54", "3xxxx6xx8",
-		"xxx93x4x7", "x2xxxxx6x", "7x4x52xxx",
-		"6xx3xxxx9", "17xx9xxxx", "x3x2xx5xx"
+	This very hard sudoku required 1 manual deduction
+	"x2xxxxxx6", "18x3x6xx4", "x3xxxxxxx",
+		"xxx1x5x94", "5xxxxxxx2", "41x2x8xxx",
+		"xxxxxxx6x", "2xx8x5x31", "7xxxxxx2x"
 	 */
 	
 	val sudoku = SudokuState(Vector(
-		"x2xxxxxx6", "18x3x6xx4", "x3xxxxxxx",
-		"xxx1x5x94", "5xxxxxxx2", "41x2x8xxx",
-		"xxxxxxx6x", "2xx8x5x31", "7xxxxxx2x").mapWithIndex { (str, index) =>
+		"8xxxx3x7x", "xxx6xxx9x", "xxxxxx2xx",
+		"x5xxxxxxx", "xx7x451xx", "xxx7xxx3x",
+		"xx1xx8x9x", "xxx5xxxxx", "x68x1x4xx").mapWithIndex { (str, index) =>
 		val x = index % 3 * 3
 		val y = index / 3 * 3
 		stringToGrid(str, Position(x, y))

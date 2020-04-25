@@ -101,6 +101,16 @@ case class SudokuState(grids: Vector[Grid]) extends GridLike[Grid, SudokuState]
 		_.position == slotPosition } { _.copy(number = number) }) })
 	
 	/**
+	 * Adds a number to this sudoku
+	 * @param slotPosition Position where the number is set
+	 * @param number Number to be set
+	 * @return A new version of this sudoku
+	 */
+	def withSlotNumberNotAllowed(slotPosition: Position, number: Int) = copy(grids = grids.mapFirstWhere {
+		_.containsPosition(slotPosition) } { grid => grid.withItems(grid.slots.mapFirstWhere {
+		_.position == slotPosition } { _.withNotAllowed(Set(number)) }) })
+	
+	/**
 	 * Tries the solving function on slots within this sudoku until a change can be made or all slots have been tested
 	 * @param f A slot solving function
 	 * @return New state of this sudoku + modified slot. None if there was no change.

@@ -30,14 +30,15 @@ object SelectNumberPopUp
 	/**
 	 * Displays a number selection pop-up
 	 * @param over Component over which the pop-up is shown
-	 * @param possibleNumbers Possible numbers that can be selected from
+	 * @param numbers Possible numbers that can be selected from
+	 * @param isDeleteMode Whether layout should be highlighted to deletion
 	 * @param baseCB A component context builder (implicit)
 	 * @param margins Margin settings (implicit)
 	 * @param borderSettings Border settings (implicit)
 	 * @param exc Execution context (implicit)
 	 * @return Future of the pop-up closing and number selection
 	 */
-	def display(over: ComponentLike with AwtComponentRelated, possibleNumbers: Vector[Int])
+	def display(over: ComponentLike with AwtComponentRelated, numbers: Vector[Int], isDeleteMode: Boolean = false)
 			   (implicit baseCB: ComponentContextBuilder, margins: Margins, borderSettings: BorderSettings,
 				exc: ExecutionContext) =
 	{
@@ -45,13 +46,13 @@ object SelectNumberPopUp
 		val selectedNumberPointer = new PointerWithEvents[Option[Int]](None)
 		val numbersContainer =
 		{
-			if (possibleNumbers.size == 4 || possibleNumbers.size == 9)
+			if (numbers.size == 4 || numbers.size == 9)
 				new GridContainer[ItemLabel[Int]]
 			else
 				Stack.row[ItemLabel[Int]]()
 		}
 		val manager = ContainerSelectionManager.forStatelessItems(numbersContainer,
-			new BackgroundDrawer(Color.blue.timesSaturation(0.22)), possibleNumbers.sorted) { i =>
+			new BackgroundDrawer(Color.blue.timesSaturation(0.22)), numbers.sorted) { i =>
 			val label = SlotVC.makeNumberLabel(i)
 			label.component.setFocusable(true)
 			label.setHandCursor()
@@ -62,7 +63,10 @@ object SelectNumberPopUp
 			label
 		}
 		
-		numbersContainer.background = Color.gray(0.66)
+		if (isDeleteMode)
+			numbersContainer.background = Color.red.withSaturation(0.25)
+		else
+			numbersContainer.background = Color.green.withSaturation(0.25)
 		numbersContainer.addCustomDrawer(borderSettings.gridBorderDrawer)
 		
 		// Displays the components in a pop-up

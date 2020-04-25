@@ -1,12 +1,14 @@
 package sudoku.view
 
+import java.awt.event.KeyEvent
+
 import sudoku.model.{BorderSettings, Position, Slot, SudokuState}
 import utopia.flow.datastructure.immutable.Graph.GraphViewNode
 import utopia.flow.datastructure.mutable.PointerWithEvents
 import utopia.flow.util.TimeExtensions._
 import utopia.genesis.color.Color
-import utopia.genesis.event.MouseButtonStateEvent
-import utopia.genesis.handling.{Actor, MouseButtonStateListener}
+import utopia.genesis.event.{KeyStateEvent, MouseButtonStateEvent}
+import utopia.genesis.handling.{Actor, KeyStateListener, MouseButtonStateListener}
 import utopia.genesis.shape.Vector3D
 import utopia.genesis.shape.shape2D.{Bounds, Line}
 import utopia.genesis.util.Drawer
@@ -60,6 +62,9 @@ class SudokuVC(initialState: SudokuState)(implicit baseCB: ComponentContextBuild
 	private var currentlySelectedSlot: Option[Slot] = None
 	private var currentLinksNode: Option[GraphViewNode[Slot, Int]] = None
 	
+	private var isCtrlPressed = false
+	private var saveStates = Vector[(SudokuState, Slot)]()
+	
 	
 	// COMPUTED	-------------------------------
 	
@@ -78,6 +83,20 @@ class SudokuVC(initialState: SudokuState)(implicit baseCB: ComponentContextBuild
 	baseCB.actorHandler += HighLightUpdater
 	baseCB.actorHandler += NumberHighLightUpdater
 	
+	addKeyStateListener(KeyStateListener(KeyStateEvent.keyFilter(KeyEvent.VK_CONTROL)) { e => isCtrlPressed = e.isDown })
+	addKeyStateListener(KeyStateListener.onKeyPressed(KeyEvent.VK_Z) { e =>
+		if (e.keyStatus(KeyEvent.VK_CONTROL) && saveStates.nonEmpty)
+		{
+			val (oldState, cancelSlot) = saveStates.last
+			println(s"Cancelling last change: ${cancelSlot.position} (${cancelSlot.halfPlaceFor})")
+			highlight(Set(cancelSlot), Set())
+			// FIXME: Doesn't draw cancelled slot data correctly!
+			content = oldState
+			saveStates = saveStates.dropRight(1)
+			repaint()
+		}
+	})
+	
 	addMouseButtonListener(MouseButtonStateListener(MouseButtonStateEvent.wasPressedFilter) { e =>
 		// Finds the slot that was pressed
 		val positionInContainer = e.positionOverArea(container.bounds)
@@ -92,9 +111,19 @@ class SudokuVC(initialState: SudokuState)(implicit baseCB: ComponentContextBuild
 				if (e.isLeftMouseButton)
 				{
 					if (slot.nonSolved)
-						SelectNumberPopUp.display(clickedSlotVC, slot.availableNumbers.toVector).foreach { num =>
-							num.foreach { selectedNumber => content = content.withSlotNumber(slot.position, Some(selectedNumber)) }
+					{
+						val isDeleting = isCtrlPressed
+						SelectNumberPopUp.display(clickedSlotVC, slot.availableNumbers.toVector, isDeleteMode = isDeleting).foreach { num =>
+							num.foreach { selectedNumber =>
+								// Saves state before altering
+								saveStates :+= content -> slot
+								if (isDeleting)
+									content = content.withSlotNumberNotAllowed(slot.position, selectedNumber)
+								else
+									content = content.withSlotNumber(slot.position, Some(selectedNumber))
+							}
 						}
+					}
 				}
 				// Changes highlighting on right click
 				else if (e.isRightMouseButton)
