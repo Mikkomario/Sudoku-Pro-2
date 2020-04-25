@@ -16,7 +16,8 @@ object Solver
 	/**
 	 * The algorithms used by this solver
 	 */
-	val algorithms = Vector(SetNextOnlyPossibleNumber) ++ (RuleOutNonHalfPairs.variants :+ RestrictNumberToLine) ++
+	val algorithms = Vector(SetNextOnlyPossibleNumber) ++ NakedTwinsRule.variations ++
+		(RuleOutNonHalfPairs.variants :+ RestrictNumberToLine) ++
 		TrimNumbers.variants ++ (FindOnlyPlaceForNumber.variants :+ RestrictNumberToGrid) ++
 		FindHalfPlaces.variants ++ XWing.variants
 	
