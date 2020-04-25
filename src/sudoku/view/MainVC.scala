@@ -19,13 +19,16 @@ import utopia.reflection.shape.LengthExtensions._
 import utopia.reflection.util.{ComponentContext, ComponentContextBuilder}
 import utopia.reflection.localization.LocalString._
 
+import scala.concurrent.ExecutionContext
+
 /**
  * This view controller is used for handling the whole puzzle
  * @author Mikko Hilpinen
  * @since 24.4.2020, v1
  */
 class MainVC(initialSudoku: SudokuState)
-			(implicit baseCB: ComponentContextBuilder, margins: Margins, borderSettings: BorderSettings, localizer: Localizer)
+			(implicit baseCB: ComponentContextBuilder, margins: Margins, borderSettings: BorderSettings,
+			 localizer: Localizer, exc: ExecutionContext)
 	extends StackableAwtComponentWrapperWrapper with AwtContainerRelated
 {
 	// ATTRIBUTES	------------------------

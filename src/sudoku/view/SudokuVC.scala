@@ -5,6 +5,7 @@ import utopia.flow.datastructure.immutable.Graph.GraphViewNode
 import utopia.flow.datastructure.mutable.PointerWithEvents
 import utopia.flow.util.TimeExtensions._
 import utopia.genesis.color.Color
+import utopia.genesis.event.MouseButtonStateEvent
 import utopia.genesis.handling.{Actor, MouseButtonStateListener}
 import utopia.genesis.shape.Vector3D
 import utopia.genesis.shape.shape2D.{Bounds, Line}
@@ -19,6 +20,7 @@ import utopia.reflection.controller.data.ContainerContentManager
 import utopia.reflection.shape.Margins
 import utopia.reflection.util.ComponentContextBuilder
 
+import scala.concurrent.ExecutionContext
 import scala.concurrent.duration.FiniteDuration
 
 object SudokuVC
@@ -32,7 +34,8 @@ object SudokuVC
  * @author Mikko Hilpinen
  * @since 22.4.2020, v1
  */
-class SudokuVC(initialState: SudokuState)(implicit baseCB: ComponentContextBuilder, margins: Margins, borderSettings: BorderSettings)
+class SudokuVC(initialState: SudokuState)(implicit baseCB: ComponentContextBuilder, margins: Margins,
+										  borderSettings: BorderSettings, exc: ExecutionContext)
 	extends StackableAwtComponentWrapperWrapper with RefreshableWithPointer[SudokuState] with CustomDrawableWrapper
 {
 	import SudokuVC._
@@ -75,7 +78,7 @@ class SudokuVC(initialState: SudokuState)(implicit baseCB: ComponentContextBuild
 	baseCB.actorHandler += HighLightUpdater
 	baseCB.actorHandler += NumberHighLightUpdater
 	
-	addMouseButtonListener(MouseButtonStateListener.onLeftPressed { e =>
+	addMouseButtonListener(MouseButtonStateListener(MouseButtonStateEvent.wasPressedFilter) { e =>
 		// Finds the slot that was pressed
 		val positionInContainer = e.positionOverArea(container.bounds)
 		container.components.find { _.bounds.contains(positionInContainer) }.flatMap { grid =>
@@ -84,17 +87,27 @@ class SudokuVC(initialState: SudokuState)(implicit baseCB: ComponentContextBuild
 		} match
 		{
 			case Some(clickedSlotVC) =>
-				println(s"Clicked on ${clickedSlotVC.content.position}")
 				val slot = clickedSlotVC.content
-				if (currentlySelectedSlot.contains(slot))
-					currentlySelectedSlot = None
-				else
+				// On left mouse click, displays number selection screen (except for solved slots)
+				if (e.isLeftMouseButton)
 				{
-					currentLinksNode = Some(content.halfPairsGraph.all(slot))
-					currentlySelectedSlot = Some(slot)
+					if (slot.nonSolved)
+						SelectNumberPopUp.display(clickedSlotVC, slot.availableNumbers.toVector).foreach { num =>
+							num.foreach { selectedNumber => content = content.withSlotNumber(slot.position, Some(selectedNumber)) }
+						}
+				}
+				// Changes highlighting on right click
+				else if (e.isRightMouseButton)
+				{
+					if (currentlySelectedSlot.exists { _.position == slot.position })
+						currentlySelectedSlot = None
+					else
+					{
+						currentLinksNode = Some(content.halfPairsGraph.all(slot))
+						currentlySelectedSlot = Some(slot)
+					}
 				}
 			case None =>
-				println("Clicked outside of slots")
 				currentlySelectedSlot = None
 		}
 		repaint()

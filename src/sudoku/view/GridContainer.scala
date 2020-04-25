@@ -1,6 +1,9 @@
 package sudoku.view
 
-import utopia.genesis.shape.shape2D.Bounds
+import scala.math.Ordering.Double.TotalOrdering
+
+import utopia.genesis.shape.shape2D.{Bounds, Point}
+import utopia.reflection.component.AreaOfItems
 import utopia.reflection.component.drawing.mutable.CustomDrawableWrapper
 import utopia.reflection.component.stack.CachingStackable
 import utopia.reflection.component.swing.{AwtComponentWrapperWrapper, SwingComponentRelated}
@@ -16,7 +19,7 @@ import utopia.reflection.shape.{StackLength, StackSize}
  */
 class GridContainer[C <: AwtStackable] extends MultiStackContainer[C]
 	with AwtComponentWrapperWrapper with AwtContainerRelated with SwingComponentRelated with CustomDrawableWrapper
-	with CachingStackable
+	with CachingStackable with AreaOfItems[C]
 {
 	// ATTRIBUTES	----------------------------
 	
@@ -29,6 +32,12 @@ class GridContainer[C <: AwtStackable] extends MultiStackContainer[C]
 	
 	
 	// IMPLEMENTED	----------------------------
+	
+	override def areaOf(item: C) = Some(item.bounds)
+	
+	override def itemNearestTo(relativePoint: Point) = components.minByOption { c =>
+		c.bounds.center.distanceFrom(relativePoint)
+	}
 	
 	override def children = super[MultiStackContainer].children
 	

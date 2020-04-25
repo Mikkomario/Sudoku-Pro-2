@@ -16,6 +16,28 @@ import utopia.reflection.shape.LengthExtensions._
 import utopia.reflection.localization.LocalString._
 import utopia.reflection.shape.Alignment.{BottomLeft, Center, TopLeft, TopRight}
 
+object SlotVC
+{
+	/**
+	 * Creates a slot-number label
+	 * @param firstItem The first displayed item
+	 * @param displayFunction Display function (default = toString)
+	 * @param baseCB Component context builder (implicit)
+	 * @param margins Margins (implicit)
+	 * @param borderSettings Border settings (implicit)
+	 * @tparam A Type of displayed item
+	 * @return A new label
+	 */
+	def makeNumberLabel[A](firstItem: A, displayFunction: DisplayFunction[A] = DisplayFunction.raw)
+						  (implicit baseCB: ComponentContextBuilder, margins: Margins, borderSettings: BorderSettings) =
+	{
+		implicit val context: ComponentContext = baseCB.withInsets(StackInsets.symmetric(margins.medium.upscaling)).result
+		val label = ItemLabel.contextual(firstItem, displayFunction)
+		label.addCustomDrawer(borderSettings.slotBorderDrawer)
+		label
+	}
+}
+
 /**
  * A view component for a single sudoku slot
  * @author Mikko Hilpinen
@@ -26,9 +48,7 @@ class SlotVC(initialSlot: Slot)(implicit baseCB: ComponentContextBuilder, margin
 {
 	// ATTRIBUTES	--------------------------
 	
-	private implicit val context: ComponentContext = baseCB.withInsets(StackInsets.symmetric(margins.medium.upscaling)).result
-	
-	private val label = ItemLabel.contextual(initialSlot, DisplayFunction.noLocalization[Slot] {
+	private val label = SlotVC.makeNumberLabel(initialSlot, DisplayFunction.noLocalization[Slot] {
 		_.number.map { _.toString }.getOrElse("").noLanguage })
 	
 	private val halfPlaceDrawers = SolvableGroupType.values.map { new HalfPlaceDrawer(_) }
@@ -36,7 +56,6 @@ class SlotVC(initialSlot: Slot)(implicit baseCB: ComponentContextBuilder, margin
 	
 	// INITIAL CODE	--------------------------
 	
-	label.addCustomDrawer(borderSettings.slotBorderDrawer)
 	if (initialSlot.nonSolved)
 	{
 		label.addCustomDrawer(AvailableNumbersDrawer)
@@ -73,7 +92,7 @@ class SlotVC(initialSlot: Slot)(implicit baseCB: ComponentContextBuilder, margin
 	
 	object AvailableNumbersDrawer extends TextDrawer
 	{
-		override val drawContext = TextDrawContext(context.font * 0.5, alignment = Center)
+		override val drawContext = TextDrawContext(baseCB.font * 0.5, alignment = Center)
 		
 		override def text =
 		{
@@ -98,7 +117,7 @@ class SlotVC(initialSlot: Slot)(implicit baseCB: ComponentContextBuilder, margin
 	{
 		override val drawContext =
 		{
-			val font = context.font * 0.5
+			val font = baseCB.font * 0.5
 			val insets = StackInsets.symmetric(margins.small.any)
 			targetGroupType match
 			{

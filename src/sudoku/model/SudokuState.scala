@@ -1,5 +1,6 @@
 package sudoku.model
 
+import utopia.flow.util.CollectionExtensions._
 import utopia.genesis.shape.Axis.{X, Y}
 import utopia.genesis.shape.Axis2D
 
@@ -88,6 +89,16 @@ case class SudokuState(grids: Vector[Grid]) extends GridLike[Grid, SudokuState]
 	 * @return Slot lines along the specified axis
 	 */
 	def slotLinesAlong(axis: Axis2D) = slotsView.lines(axis).map { slots => SlotLine(slots.toVector) }
+	
+	/**
+	 * Adds a number to this sudoku
+	 * @param slotPosition Position where the number is set
+	 * @param number Number to be set
+	 * @return A new version of this sudoku
+	 */
+	def withSlotNumber(slotPosition: Position, number: Option[Int]) = copy(grids = grids.mapFirstWhere {
+		_.containsPosition(slotPosition) } { grid => grid.withItems(grid.slots.mapFirstWhere {
+		_.position == slotPosition } { _.copy(number = number) }) })
 	
 	/**
 	 * Tries the solving function on slots within this sudoku until a change can be made or all slots have been tested
