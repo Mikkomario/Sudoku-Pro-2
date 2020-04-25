@@ -36,12 +36,13 @@ object RestrictNumberToGrid extends SolveAlgorithm
 						// Remembers the affected slots and the line index
 						if (affectedSlots.nonEmpty)
 						{
-							println(s"Slots [${possibleSlots.map { _.position }.mkString(", ")}] are the only places in grid for $number")
-							println(s"Therefore restricts this number from [${affectedSlots.map { _.position }.mkString(", ")}]")
-							println("Available numbers in those slots before alteration:")
+							//println(s"Slots [${possibleSlots.map { _.position }.mkString(", ")}] are the only places in grid for $number")
+							//println(s"Therefore restricts this number from [${affectedSlots.map { _.position }.mkString(", ")}]")
+							//println("Available numbers in those slots before alteration:")
+							/*
 							affectedSlots.foreach { slot =>
 								println(s"${slot.position}: [${slot.availableNumbers.toVector.sorted.mkString(", ")}]")
-							}
+							}*/
 							Some((number, affectedSlots.map { _.position }, possibleSlots))
 						}
 						else

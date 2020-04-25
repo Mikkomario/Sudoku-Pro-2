@@ -1,11 +1,13 @@
 package sudoku.view
 
-import sudoku.model.{BorderSettings, Slot, SudokuState}
+import sudoku.model.{BorderSettings, Position, Slot, SudokuState}
+import utopia.flow.datastructure.immutable.Graph.GraphViewNode
 import utopia.flow.datastructure.mutable.PointerWithEvents
 import utopia.flow.util.TimeExtensions._
 import utopia.genesis.color.Color
-import utopia.genesis.handling.Actor
-import utopia.genesis.shape.shape2D.Bounds
+import utopia.genesis.handling.{Actor, MouseButtonStateListener}
+import utopia.genesis.shape.Vector3D
+import utopia.genesis.shape.shape2D.{Bounds, Line}
 import utopia.genesis.util.Drawer
 import utopia.inception.handling.HandlerType
 import utopia.reflection.component.RefreshableWithPointer
@@ -52,6 +54,9 @@ class SudokuVC(initialState: SudokuState)(implicit baseCB: ComponentContextBuild
 	
 	private var numberHighlightLevel = 0.0
 	
+	private var currentlySelectedSlot: Option[Slot] = None
+	private var currentLinksNode: Option[GraphViewNode[Slot, Int]] = None
+	
 	
 	// COMPUTED	-------------------------------
 	
@@ -66,8 +71,35 @@ class SudokuVC(initialState: SudokuState)(implicit baseCB: ComponentContextBuild
 	contentPointer.addListener { e => manager.content = e.newValue.grids }
 	addCustomDrawer(ModifiedSlotsHighlighter)
 	addCustomDrawer(NumberHighlighter)
+	addCustomDrawer(LinksDrawer)
 	baseCB.actorHandler += HighLightUpdater
 	baseCB.actorHandler += NumberHighLightUpdater
+	
+	addMouseButtonListener(MouseButtonStateListener.onLeftPressed { e =>
+		// Finds the slot that was pressed
+		val positionInContainer = e.positionOverArea(container.bounds)
+		container.components.find { _.bounds.contains(positionInContainer) }.flatMap { grid =>
+			val positionInGrid = positionInContainer - grid.position
+			grid.slotDisplays.find { _.bounds.contains(positionInGrid) }
+		} match
+		{
+			case Some(clickedSlotVC) =>
+				println(s"Clicked on ${clickedSlotVC.content.position}")
+				val slot = clickedSlotVC.content
+				if (currentlySelectedSlot.contains(slot))
+					currentlySelectedSlot = None
+				else
+				{
+					currentLinksNode = Some(content.halfPairsGraph.all(slot))
+					currentlySelectedSlot = Some(slot)
+				}
+			case None =>
+				println("Clicked outside of slots")
+				currentlySelectedSlot = None
+		}
+		repaint()
+		None
+	})
 	
 	
 	// IMPLEMENTED	----------------------------
@@ -223,6 +255,34 @@ class SudokuVC(initialState: SudokuState)(implicit baseCB: ComponentContextBuild
 					}
 				}
 			}
+		}
+	}
+	
+	private object LinksDrawer extends CustomDrawer
+	{
+		val color = Color.blue.withAlpha(0.22)
+		
+		override def drawLevel = Background
+		
+		override def draw(drawer: Drawer, bounds: Bounds) =
+		{
+			// Draws a line from each link to the next step
+			currentLinksNode.foreach { originNode =>
+				drawer.onlyEdges(Color.blue).withStroke(3).disposeAfter { d =>
+					originNode.foreach { node =>
+						val origin = slotPositionToPixels(node.content.position, bounds)
+						node.leavingEdges.foreach { edge =>
+							val target = slotPositionToPixels(edge.end.content.position, bounds)
+							d.draw(Line(origin, target))
+						}
+					}
+				}
+			}
+		}
+		
+		def slotPositionToPixels(position: Position, bounds: Bounds) =
+		{
+			bounds.position + (Vector3D(position.x, position.y) / 9 * bounds.size) + bounds.size / 18
 		}
 	}
 }

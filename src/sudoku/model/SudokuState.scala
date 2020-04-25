@@ -16,6 +16,11 @@ case class SudokuState(grids: Vector[Grid]) extends GridLike[Grid, SudokuState]
 	
 	override val sideLength = 3
 	
+	/**
+	 * A graph representation of the half-pair connections in this sudoku
+	 */
+	lazy val halfPairsGraph = HalfPairsGraph(grids)
+	
 	
 	// COMPUTED	-----------------------
 	

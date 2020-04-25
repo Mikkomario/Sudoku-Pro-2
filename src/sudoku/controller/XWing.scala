@@ -1,6 +1,7 @@
 package sudoku.controller
 
 import sudoku.model.{Position, SolveResult, SudokuState}
+import sudoku.util.MultiMapBuilder
 import utopia.flow.util.CollectionExtensions._
 import utopia.genesis.shape.Axis.{X, Y}
 import utopia.genesis.shape.Axis2D
@@ -56,8 +57,8 @@ class XWing(axis: Axis2D) extends SolveAlgorithm
 		{
 			// Collects each number that is now invalidated on each affected row and column index
 			// Target Coordinate -> Limited Number
-			val limitedPerpendicularIndicesBuilder = new MultiMapBuilder[Int, Int]
-			val limitedAlignedIndicesBuilder = new MultiMapBuilder[Int, Int]
+			val limitedPerpendicularIndicesBuilder = new MultiMapBuilder[Int, Int]()
+			val limitedAlignedIndicesBuilder = new MultiMapBuilder[Int, Int]()
 			// These registered x-wing corners can still hold the numbers
 			// Position -> Numbers
 			val protectedNumbersBuilder = new MultiMapBuilder[Position, Int]
@@ -120,37 +121,5 @@ class XWing(axis: Axis2D) extends SolveAlgorithm
 		}
 		else
 			SolveResult.failure(sudoku)
-	}
-	
-	
-	// NESTED	-----------------------------
-	
-	private class MultiMapBuilder[K, V]
-	{
-		private var map = Map[K, Vector[V]]()
-		
-		def +=(key: K, value: V) =
-		{
-			if (map.contains(key))
-				map += key -> (map(key) :+ value)
-			else
-				map += key -> Vector(value)
-		}
-		
-		def +=(kv: (K, V)): Unit = +=(kv._1, kv._2)
-		
-		def ++=(key: K, values: Vector[V]) =
-		{
-			if (map.contains(key))
-				map += key -> (map(key) ++ values)
-			else
-				map += key -> values
-		}
-		
-		def ++=(kv: (K, Vector[V])): Unit = ++=(kv._1, kv._2)
-		
-		def ++=(keys: Iterable[K], value: V) = keys.foreach { this += _ -> value }
-		
-		def result() = map
 	}
 }
