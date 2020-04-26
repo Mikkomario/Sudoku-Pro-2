@@ -1,13 +1,39 @@
 package sudoku.controller
 
-import sudoku.model.{FullSlotsGroup, Slot, SolvableGroupType}
+import sudoku.model.{FullSlotsGroup, Slot, SolvableGroupType, SolveResult, SudokuState}
 
-object TrimNumbers
+import scala.collection.immutable.VectorBuilder
+
+object TrimNumbers extends SolveAlgorithm
 {
+	private implicit val languageCode: String = "en"
+	
 	/**
 	 * Variants of this algorithm for each group type
 	 */
 	val variants = SolvableGroupType.values.map { new TrimNumbers(_) }
+	
+	override def name = "Makes sure that grids, rows and columns have only one instance of each number"
+	
+	override def apply(sudoku: SudokuState) =
+	{
+		val modifiedSlotsBuilder = new VectorBuilder[Slot]
+		val affectingSlotsBuilder = new VectorBuilder[Slot]
+		var foundSuccess = false
+		
+		val finalState = variants.foldLeft(sudoku) { (problem, solver) =>
+			val result = solver(problem)
+			if (result.wasSuccess)
+			{
+				foundSuccess = true
+				modifiedSlotsBuilder ++= result.modifiedSlots
+				affectingSlotsBuilder ++= result.relatedSlots
+			}
+			result.newState
+		}
+		
+		SolveResult(foundSuccess, finalState, modifiedSlotsBuilder.result().toSet, affectingSlotsBuilder.result().toSet, Some(name))
+	}
 }
 
 /**
@@ -17,10 +43,7 @@ object TrimNumbers
  */
 class TrimNumbers(override val targetType: SolvableGroupType) extends SolveAllGroups
 {
-	// ATTRIBUTES	----------------------
-	
-	implicit val languageCode: String = "en"
-	
+	import TrimNumbers.languageCode
 	
 	// IMPLEMENTED	----------------------
 	

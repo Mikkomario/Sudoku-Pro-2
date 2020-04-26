@@ -3,6 +3,7 @@ package sudoku.model
 import sudoku.model.SolvableGroupType.{Column, Row}
 import sudoku.util.MultiMapBuilder
 import utopia.flow.datastructure.immutable.Graph
+import utopia.flow.datastructure.immutable.Graph.GraphViewNode
 import utopia.flow.util.CollectionExtensions._
 
 import scala.collection.mutable
@@ -23,8 +24,8 @@ object HalfPairsGraph
 		
 		// Goes through each grid
 		grids.zipWithIndex.foreach { case (grid, gridIndex) =>
-			// Targets each slot in each grid separately
-			grid.slots.foreach { slot =>
+			// Targets each slot in each grid separately (ignores solved slots)
+			grid.emptySlots.foreach { slot =>
 				// Handles each half-number style (row, column, grid) separately
 				slot.halfPlaceFor.foreach { case (category, numbers) =>
 					val indexInCategory = category match
@@ -78,6 +79,11 @@ case class HalfPairsGraph private(private val graphsByCategory: Map[SolvableGrou
 	 */
 	lazy val pairs = all.filterByNodeContent { _.halfPlaceFor.values.exists { _.size > 1 } }
 	
+	/**
+	 * Includes only those slots that have exactly 2 possible numbers that can be placed in them
+	 */
+	lazy val twins = all.filterByNodeContent { _.availableNumbers.size == 2 }
+	
 	
 	// COMPUTED	-----------------------------
 	
@@ -106,14 +112,41 @@ case class HalfPairsGraph private(private val graphsByCategory: Map[SolvableGrou
 	}
 	
 	/**
-	 * @param slot A slot
-	 * @return Tree that represents the linked slots
+	 * @return All chains created by linked twin slots, grouped into individual sub-graphs. Chains within a sub-graph
+	 *         are interconnected and affect each other. The returned chains contain each chain <b>twice</b>, each
+	 *         time with different direction.
 	 */
-	def chainsFrom(slot: Slot) = all(slot).toTreeWithoutEdges
+	def twinChains =
+	{
+		// First finds all the chains / subgraphs within the twins
+		twins.subGraphs.map { chainGraph =>
+			// Checks if there's a node where the chain starts (only has 1 connection)
+			// If there was such a node, starts the chains from that one
+			// Otherwise starts the chains from an arbitrary node
+			val startNode = chainGraph.nodes.find { _.leavingEdges.map { _.end }.size == 1 }.getOrElse(chainGraph.nodes.head)
+			// Registers all possible chains that include this node
+			startNode.toTreeWithoutEdges.allBranches.map { chain => startNode.content +: chain }
+		}
+	}
 	
 	
 	// OTHER	-----------------------------
 	
 	def forGroupType(groupType: SolvableGroupType) = graphsByCategory.getOrElse(groupType,
 		Graph.empty(isTwoWayBound = true))
+	
+	/**
+	 * @param slot A slot
+	 * @return Tree that represents the linked slots
+	 */
+	def chainsFrom(slot: Slot) = chainsFromNode(all(slot))
+	
+	/**
+	 * @param slot A slot
+	 * @return Tree that represents linked twin slots
+	 */
+	def twinChainsFrom(slot: Slot) = chainsFromNode(twins(slot))
+	
+	private def chainsFromNode(node: GraphViewNode[Slot, _]) =
+		node.toTreeWithoutEdges.allBranches.map { branch => node.content +: branch }
 }

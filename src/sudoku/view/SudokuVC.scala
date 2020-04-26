@@ -3,9 +3,9 @@ package sudoku.view
 import java.awt.event.KeyEvent
 
 import sudoku.model.{BorderSettings, Position, Slot, SudokuState}
-import utopia.flow.datastructure.immutable.Graph.GraphViewNode
 import utopia.flow.datastructure.mutable.PointerWithEvents
 import utopia.flow.util.TimeExtensions._
+import utopia.flow.util.CollectionExtensions._
 import utopia.genesis.color.Color
 import utopia.genesis.event.{KeyStateEvent, MouseButtonStateEvent}
 import utopia.genesis.handling.{Actor, KeyStateListener, MouseButtonStateListener}
@@ -60,7 +60,8 @@ class SudokuVC(initialState: SudokuState)(implicit baseCB: ComponentContextBuild
 	private var numberHighlightLevel = 0.0
 	
 	private var currentlySelectedSlot: Option[Slot] = None
-	private var currentLinksNode: Option[GraphViewNode[Slot, Int]] = None
+	private var currentHighlightedLinks = Vector[(Slot, Slot)]()
+	private var highlightIsTwinRestricted = false
 	
 	private var isCtrlPressed = false
 	private var saveStates = Vector[(SudokuState, Slot)]()
@@ -88,12 +89,11 @@ class SudokuVC(initialState: SudokuState)(implicit baseCB: ComponentContextBuild
 		if (e.keyStatus(KeyEvent.VK_CONTROL) && saveStates.nonEmpty)
 		{
 			val (oldState, cancelSlot) = saveStates.last
-			println(s"Cancelling last change: ${cancelSlot.position} (${cancelSlot.halfPlaceFor})")
+			println(s"Cancelling last change: ${cancelSlot.position}")
+			content = oldState
 			highlight(Set(cancelSlot), Set())
 			// FIXME: Doesn't draw cancelled slot data correctly!
-			content = oldState
 			saveStates = saveStates.dropRight(1)
-			repaint()
 		}
 	})
 	
@@ -128,16 +128,36 @@ class SudokuVC(initialState: SudokuState)(implicit baseCB: ComponentContextBuild
 				// Changes highlighting on right click
 				else if (e.isRightMouseButton)
 				{
-					if (currentlySelectedSlot.exists { _.position == slot.position })
+					if (currentlySelectedSlot.exists { _.position == slot.position } || slot.isSolved)
+					{
 						currentlySelectedSlot = None
+						currentHighlightedLinks = Vector()
+					}
 					else
 					{
-						currentLinksNode = Some(content.halfPairsGraph.all(slot))
+						val chains =
+						{
+							// On ctrl + click on twin slot, highlights twin chains
+							if (isCtrlPressed && slot.availableNumbers.size == 2)
+							{
+								highlightIsTwinRestricted = true
+								content.halfPairsGraph.twinChainsFrom(slot)
+							}
+							else
+							{
+								highlightIsTwinRestricted = false
+								content.halfPairsGraph.chainsFrom(slot)
+							}
+						}
+						
+						currentHighlightedLinks = chains.flatMap { branch => branch.paired }.distinctBy { pair =>
+							Set(pair._1, pair._2) }
 						currentlySelectedSlot = Some(slot)
 					}
 				}
 			case None =>
 				currentlySelectedSlot = None
+				currentHighlightedLinks = Vector()
 		}
 		repaint()
 		None
@@ -302,21 +322,21 @@ class SudokuVC(initialState: SudokuState)(implicit baseCB: ComponentContextBuild
 	
 	private object LinksDrawer extends CustomDrawer
 	{
-		val color = Color.blue.withAlpha(0.22)
+		val color = Color.blue.withAlpha(0.55)
+		val twinsColor = Color.red.withAlpha(0.55)
 		
 		override def drawLevel = Background
 		
 		override def draw(drawer: Drawer, bounds: Bounds) =
 		{
-			// Draws a line from each link to the next step
-			currentLinksNode.foreach { originNode =>
-				drawer.onlyEdges(Color.blue).withStroke(3).disposeAfter { d =>
-					originNode.foreach { node =>
-						val origin = slotPositionToPixels(node.content.position, bounds)
-						node.leavingEdges.foreach { edge =>
-							val target = slotPositionToPixels(edge.end.content.position, bounds)
-							d.draw(Line(origin, target))
-						}
+			if (currentHighlightedLinks.nonEmpty)
+			{
+				// Draws a line from each chain link to the next step
+				drawer.onlyEdges(if (highlightIsTwinRestricted) twinsColor else color).withStroke(3).disposeAfter { d =>
+					currentHighlightedLinks.foreach { case (first, second) =>
+						val origin = slotPositionToPixels(first.position, bounds)
+						val target = slotPositionToPixels(second.position, bounds)
+						d.draw(Line(origin, target))
 					}
 				}
 			}

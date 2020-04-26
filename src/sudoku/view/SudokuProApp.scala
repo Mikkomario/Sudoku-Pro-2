@@ -59,6 +59,11 @@ object SudokuProApp extends App
 		"xxx1x5x94", "5xxxxxxx2", "41x2x8xxx",
 		"xxxxxxx6x", "2xx8x5x31", "7xxxxxx2x"
 	 */
+	/* The world's hardest sudoku - wasn't able to deduct a single number
+	"8xxxx3x7x", "xxx6xxx9x", "xxxxxx2xx",
+		"x5xxxxxxx", "xx7x451xx", "xxx7xxx3x",
+		"xx1xx8x9x", "xxx5xxxxx", "x68x1x4xx"
+	 */
 	
 	val sudoku = SudokuState(Vector(
 		"8xxxx3x7x", "xxx6xxx9x", "xxxxxx2xx",

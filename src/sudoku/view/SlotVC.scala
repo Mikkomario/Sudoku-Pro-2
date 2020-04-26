@@ -64,17 +64,20 @@ class SlotVC(initialSlot: Slot)(implicit baseCB: ComponentContextBuilder, margin
 	
 	// Updates custom drawing (only available when not solved)
 	contentPointer.addListener { e =>
+		// println(s"Updating view for slot ${e.newValue}")
 		if (e.newValue.isSolved != e.oldValue.isSolved)
 		{
 			if (e.newValue.isSolved)
 			{
-				label.addCustomDrawer(AvailableNumbersDrawer)
-				halfPlaceDrawers.foreach { label.addCustomDrawer(_) }
+				label.removeCustomDrawer(AvailableNumbersDrawer)
+				halfPlaceDrawers.foreach { label.removeCustomDrawer(_) }
+				// println(s"${e.newValue} is now solved. Removes custom drawers.")
 			}
 			else
 			{
-				label.removeCustomDrawer(AvailableNumbersDrawer)
-				halfPlaceDrawers.foreach { label.removeCustomDrawer(_) }
+				label.addCustomDrawer(AvailableNumbersDrawer)
+				halfPlaceDrawers.foreach { label.addCustomDrawer(_) }
+				// println(s"${e.newValue} is no longer solved. Adds custom drawers")
 			}
 		}
 		label.repaint()

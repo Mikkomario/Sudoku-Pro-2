@@ -16,10 +16,9 @@ object Solver
 	/**
 	 * The algorithms used by this solver
 	 */
-	val algorithms = Vector(SetNextOnlyPossibleNumber) ++
-		(RuleOutNonHalfPairs.variants :+ RestrictNumberToLine) ++
-		TrimNumbers.variants ++ (FindOnlyPlaceForNumber.variants :+ RestrictNumberToGrid) ++
-		NakedTwinsRule.variations ++ FindHalfPlaces.variants ++ XWing.variants :+ ClosedChainsRule
+	val algorithms = Vector(SetNextOnlyPossibleNumber, TrimNumbers) ++
+		(RuleOutNonHalfPairs.variants :+ RestrictNumberToLine) ++ (FindOnlyPlaceForNumber.variants :+ RestrictNumberToGrid) ++
+		NakedTwinsRule.variations ++ FindHalfPlaces.variants ++ XWing.variants :+ ClosedChainsRule :+ ChainAssociationsExclusion
 	
 	/**
 	 * Attempts to solve the next step in the sudoku (the next step may be information only)

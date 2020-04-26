@@ -22,6 +22,11 @@ case class SudokuState(grids: Vector[Grid]) extends GridLike[Grid, SudokuState]
 	 */
 	lazy val halfPairsGraph = HalfPairsGraph(grids)
 	
+	/**
+	 * A graph representation of all same group connections between unsolved nodes
+	 */
+	lazy val groupAssociationsGraph = NumberAssociationGraph(grids)
+	
 	
 	// COMPUTED	-----------------------
 	
