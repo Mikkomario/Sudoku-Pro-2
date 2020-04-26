@@ -14,22 +14,21 @@ import utopia.flow.util.WaitUtils
 object SolveTest extends App
 {
 	// Creates a test sudoku
-	def stringToGrid(str: String, gridPosition: Position) =
+	def stringToGrid(str: String, gridIndex: Int) =
 	{
+		val gridX = gridIndex % 3 * 3
+		val gridY = gridIndex / 3 * 3
 		val slots = str.map { c => if (c.isDigit) Some(c.asDigit) else None }.mapWithIndex { (num, i) =>
-			val x = i % 3 + gridPosition.x
-			val y = i / 3 + gridPosition.y
-			Slot(Position(x, y), num)
+			val x = i % 3 + gridX
+			val y = i / 3 + gridY
+			Slot(Position(x, y), gridIndex, num)
 		}.toVector
 		Grid(slots)
 	}
 	val sudoku = SudokuState(Vector(
 		"xx2xx4x9x", "xxxx1xx54", "3xxxx6xx8",
 		"xxx93x4x7", "x2xxxxx6x", "7x4x52xxx",
-		"6xx3xxxx9", "17xx9xxxx", "x3x2xx5xx").mapWithIndex { (str, index) =>
-		val x = index % 3 * 3
-		val y = index / 3 * 3
-		stringToGrid(str, Position(x, y))
+		"6xx3xxxx9", "17xx9xxxx", "x3x2xx5xx").mapWithIndex { (str, index) => stringToGrid(str, index)
 	}.toVector)
 	
 	println(s"Start:\n${sudoku.ascii}")

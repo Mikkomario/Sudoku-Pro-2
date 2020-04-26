@@ -9,13 +9,14 @@ import utopia.genesis.shape.Axis2D
  * @author Mikko Hilpinen
  * @since 22.4.2020, v1
  * @param position The x-y -coordinate of this slot
+ * @param gridIndex The index of the grid that contains this slot
  * @param number The number in this slot (None if empty)
  * @param cantBe Numbers this slot is not allowed to have (negative limit)
  * @param mustBe Numbers this slot is limited to (positive limit)
  * @param halfPlaceFor Numbers for which this slot is one of the two places to go in a local system (markers).
  *                     Separated for each local system group type.
  */
-case class Slot(position: Position, number: Option[Int] = None, cantBe: Set[Int] = Set(), mustBe: Set[Int] = Set(),
+case class Slot(position: Position, gridIndex: Int, number: Option[Int] = None, cantBe: Set[Int] = Set(), mustBe: Set[Int] = Set(),
 				halfPlaceFor: Map[SolvableGroupType, Set[Int]] = Map()) extends Solvable
 {
 	// ATTRIBUTES	--------------------
@@ -77,6 +78,17 @@ case class Slot(position: Position, number: Option[Int] = None, cantBe: Set[Int]
 	
 	
 	// OTHER	------------------------
+	
+	/**
+	 * @param groupType Targeted group type
+	 * @return The index of the group of that type this slot belongs to
+	 */
+	def indexIn(groupType: SolvableGroupType) = groupType match
+	{
+		case SolvableGroupType.Grid => gridIndex
+		case Row => position.y
+		case Column => position.x
+	}
 	
 	/**
 	 * @param axis Targeted axis

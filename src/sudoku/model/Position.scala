@@ -2,6 +2,7 @@ package sudoku.model
 
 import utopia.genesis.shape.Axis.{X, Y}
 import utopia.genesis.shape.Axis2D
+import utopia.genesis.shape.shape2D.Point
 
 /**
  * Simply an x-y-coordinate pair on the grid
@@ -17,4 +18,6 @@ case class Position(x: Int, y: Int)
 		case X => x
 		case Y => y
 	}
+	
+	def toPoint = Point(x, y)
 }

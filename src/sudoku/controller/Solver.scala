@@ -18,7 +18,8 @@ object Solver
 	 */
 	val algorithms = Vector(SetNextOnlyPossibleNumber, TrimNumbers) ++
 		(RuleOutNonHalfPairs.variants :+ RestrictNumberToLine) ++ (FindOnlyPlaceForNumber.variants :+ RestrictNumberToGrid) ++
-		NakedTwinsRule.variations ++ FindHalfPlaces.variants ++ XWing.variants :+ ClosedChainsRule :+ ChainAssociationsExclusion
+		CenterRingAndCornersMatcher.variants ++ NakedTwinsRule.variations ++ FindHalfPlaces.variants ++ XWing.variants :+
+		ClosedChainsRule :+ ChainAssociationsExclusion
 	
 	/**
 	 * Attempts to solve the next step in the sudoku (the next step may be information only)

@@ -44,17 +44,19 @@ object SudokuProApp extends App
 	implicit val baseContext: ComponentContext = baseCB.result
 	
 	// Creates a test sudoku
-	def stringToGrid(str: String, gridPosition: Position) =
+	def stringToGrid(str: String, gridIndex: Int) =
 	{
+		val gridX = gridIndex % 3 * 3
+		val gridY = gridIndex / 3 * 3
 		val slots = str.map { c => if (c.isDigit) Some(c.asDigit) else None }.mapWithIndex { (num, i) =>
-			val x = i % 3 + gridPosition.x
-			val y = i / 3 + gridPosition.y
-			Slot(Position(x, y), num)
+			val x = i % 3 + gridX
+			val y = i / 3 + gridY
+			Slot(Position(x, y), gridIndex, num)
 		}.toVector
 		Grid(slots)
 	}
 	/*
-	This very hard sudoku required 1 manual deduction
+	This very hard sudoku - requires advanced techniques
 	"x2xxxxxx6", "18x3x6xx4", "x3xxxxxxx",
 		"xxx1x5x94", "5xxxxxxx2", "41x2x8xxx",
 		"xxxxxxx6x", "2xx8x5x31", "7xxxxxx2x"
@@ -64,14 +66,17 @@ object SudokuProApp extends App
 		"x5xxxxxxx", "xx7x451xx", "xxx7xxx3x",
 		"xx1xx8x9x", "xxx5xxxxx", "x68x1x4xx"
 	 */
+	/*
+	Evil sudoku, required 1 manual deduction (naked twins + chained half-numbers)
+	"xx2x9x4xx", "xx3x6x9xx", "xx4x8x6xx",
+		"1xxx5xxx3", "2xxx4xxx5", "7xxx6xxx1",
+		"xx9x3x7xx", "xx7x8x1xx", "xx2x7x8xx"
+	 */
 	
 	val sudoku = SudokuState(Vector(
-		"8xxxx3x7x", "xxx6xxx9x", "xxxxxx2xx",
-		"x5xxxxxxx", "xx7x451xx", "xxx7xxx3x",
-		"xx1xx8x9x", "xxx5xxxxx", "x68x1x4xx").mapWithIndex { (str, index) =>
-		val x = index % 3 * 3
-		val y = index / 3 * 3
-		stringToGrid(str, Position(x, y))
+		"xx4x8x3xx", "xx5x4x7xx", "xx8x5x6xx",
+		"6xxx3xxx9", "4xxx2xxx1", "3xxx4xxx7",
+		"xx5x6x2xx", "xx2x8x9xx", "xx1x7x4xx").mapWithIndex { (str, index) => stringToGrid(str, index)
 	}.toVector)
 	
 	// Creates the component to display
