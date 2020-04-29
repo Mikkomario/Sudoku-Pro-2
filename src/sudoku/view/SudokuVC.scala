@@ -2,7 +2,7 @@ package sudoku.view
 
 import java.awt.event.KeyEvent
 
-import sudoku.model.{BorderSettings, Position, Slot, SudokuState}
+import sudoku.model.{Position, Slot, SudokuState}
 import utopia.flow.datastructure.mutable.PointerWithEvents
 import utopia.flow.util.TimeExtensions._
 import utopia.flow.util.CollectionExtensions._
@@ -14,15 +14,13 @@ import utopia.genesis.shape.shape2D.{Bounds, Line}
 import utopia.genesis.util.Drawer
 import utopia.inception.handling.HandlerType
 import utopia.reflection.component.RefreshableWithPointer
+import utopia.reflection.component.context.ColorContext
 import utopia.reflection.component.drawing.mutable.CustomDrawableWrapper
 import utopia.reflection.component.drawing.template.CustomDrawer
-import utopia.reflection.component.drawing.template.DrawLevel.Background
+import utopia.reflection.component.drawing.template.DrawLevel.Normal
 import utopia.reflection.component.swing.StackableAwtComponentWrapperWrapper
 import utopia.reflection.controller.data.ContainerContentManager
-import utopia.reflection.shape.Margins
-import utopia.reflection.util.ComponentContextBuilder
 
-import scala.concurrent.ExecutionContext
 import scala.concurrent.duration.FiniteDuration
 
 object SudokuVC
@@ -36,13 +34,15 @@ object SudokuVC
  * @author Mikko Hilpinen
  * @since 22.4.2020, v1
  */
-class SudokuVC(initialState: SudokuState)(implicit baseCB: ComponentContextBuilder, margins: Margins,
-										  borderSettings: BorderSettings, exc: ExecutionContext)
+class SudokuVC(initialState: SudokuState, parentContext: ColorContext)
 	extends StackableAwtComponentWrapperWrapper with RefreshableWithPointer[SudokuState] with CustomDrawableWrapper
 {
 	import SudokuVC._
+	import DefaultContext._
 	
 	// ATTRIBUTES	----------------------------
+	
+	private val backgroundColor = colorScheme.gray.light
 	
 	val contentPointer = new PointerWithEvents[SudokuState](initialState)
 	
@@ -50,8 +50,10 @@ class SudokuVC(initialState: SudokuState)(implicit baseCB: ComponentContextBuild
 	private var lastHighlightedNumber = 1
 	
 	private val container = new GridContainer[GridVC]
-	private val manager = ContainerContentManager.forImmutableStates(container, initialState.grids) {
-		_.position == _.position } { grid => new GridVC(grid) }
+	private val manager = parentContext.inContextWithBackground(backgroundColor).use { implicit context =>
+		ContainerContentManager.forImmutableStates(container, initialState.grids) {
+			_.position == _.position } { grid => new GridVC(grid) }
+	}
 	
 	private var _lastModifiedSlots = Set[Slot]()
 	private var _relatedSlots = Set[Slot]()
@@ -77,12 +79,14 @@ class SudokuVC(initialState: SudokuState)(implicit baseCB: ComponentContextBuild
 	
 	// INITIAL CODE	---------------------------
 	
+	container.background = backgroundColor
+	
 	contentPointer.addListener { e => manager.content = e.newValue.grids }
 	addCustomDrawer(ModifiedSlotsHighlighter)
 	addCustomDrawer(NumberHighlighter)
 	addCustomDrawer(LinksDrawer)
-	baseCB.actorHandler += HighLightUpdater
-	baseCB.actorHandler += NumberHighLightUpdater
+	parentContext.actorHandler += HighLightUpdater
+	parentContext.actorHandler += NumberHighLightUpdater
 	
 	addKeyStateListener(KeyStateListener(KeyStateEvent.keyFilter(KeyEvent.VK_CONTROL)) { e => isCtrlPressed = e.isDown })
 	addKeyStateListener(KeyStateListener.onKeyPressed(KeyEvent.VK_Z) { e =>
@@ -245,13 +249,13 @@ class SudokuVC(initialState: SudokuState)(implicit baseCB: ComponentContextBuild
 	{
 		// ATTRIBUTES	------------------------
 		
-		private val modifiedColor = Color.green.timesSaturation(0.5)
-		private val relatedColor = Color.yellow.timesSaturation(0.5)
+		private val modifiedColor = colorScheme.secondary.forBackground(backgroundColor)
+		private val relatedColor = colorScheme.primary.forBackground(backgroundColor)
 		
 		
 		// IMPLEMENTED	------------------------
 		
-		override def drawLevel = Background
+		override def drawLevel = Normal
 		
 		override def draw(drawer: Drawer, bounds: Bounds) =
 		{
@@ -284,13 +288,13 @@ class SudokuVC(initialState: SudokuState)(implicit baseCB: ComponentContextBuild
 	{
 		// ATTRIBUTES	-------------------------
 		
-		private val possibleColor = Color.blue.timesSaturation(0.5).withAlpha(0.33)
-		private val takenColor = Color.red.timesSaturation(0.5).withAlpha(0.55)
+		private val possibleColor = colorScheme.primary.forBackground(backgroundColor).withAlpha(0.55)
+		private val takenColor = colorScheme.secondary.forBackground(backgroundColor).withAlpha(0.55)
 		
 		
 		// IMPLEMENTED	-------------------------
 		
-		override def drawLevel = Background
+		override def drawLevel = Normal
 		
 		override def draw(drawer: Drawer, bounds: Bounds) =
 		{
@@ -322,17 +326,17 @@ class SudokuVC(initialState: SudokuState)(implicit baseCB: ComponentContextBuild
 	
 	private object LinksDrawer extends CustomDrawer
 	{
-		val color = Color.blue.withAlpha(0.55)
-		val twinsColor = Color.red.withAlpha(0.55)
+		val color = colorScheme.primary.forBackground(backgroundColor).withAlpha(0.88)
+		val twinsColor = colorScheme.secondary.forBackground(backgroundColor).withAlpha(0.88)
 		
-		override def drawLevel = Background
+		override def drawLevel = Normal
 		
 		override def draw(drawer: Drawer, bounds: Bounds) =
 		{
 			if (currentHighlightedLinks.nonEmpty)
 			{
 				// Draws a line from each chain link to the next step
-				drawer.onlyEdges(if (highlightIsTwinRestricted) twinsColor else color).withStroke(3).disposeAfter { d =>
+				drawer.onlyEdges(if (highlightIsTwinRestricted) twinsColor else color).withStroke(4).disposeAfter { d =>
 					currentHighlightedLinks.foreach { case (first, second) =>
 						val origin = slotPositionToPixels(first.position, bounds)
 						val target = slotPositionToPixels(second.position, bounds)

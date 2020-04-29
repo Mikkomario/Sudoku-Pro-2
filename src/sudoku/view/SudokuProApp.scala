@@ -1,23 +1,12 @@
 package sudoku.view
 
 import sudoku.controller.Solver
-import sudoku.model.{BorderSettings, Grid, Position, Slot, SudokuState}
-import utopia.flow.async.ThreadPool
+import sudoku.model.{Grid, Position, Slot, SudokuState}
 import utopia.flow.util.CollectionExtensions._
-import utopia.genesis.color.Color
 import utopia.genesis.generic.GenesisDataType
-import utopia.genesis.handling.mutable.ActorHandler
 import utopia.reflection.container.swing.window.Frame
 import utopia.reflection.container.swing.window.WindowResizePolicy.Program
-import utopia.reflection.localization.{Localizer, NoLocalization}
-import utopia.reflection.shape.Alignment.Center
-import utopia.reflection.shape.{Margins, StackInsets}
-import utopia.reflection.text.Font
-import utopia.reflection.text.FontStyle.Plain
-import utopia.reflection.util.{ComponentContext, ComponentContextBuilder, SingleFrameSetup}
-import utopia.reflection.shape.LengthExtensions._
-
-import scala.concurrent.ExecutionContext
+import utopia.reflection.util.SingleFrameSetup
 
 /**
  * The main app class for this project
@@ -28,20 +17,10 @@ object SudokuProApp extends App
 {
 	GenesisDataType.setup()
 	
+	import DefaultContext._
+	
 	// Sets up localization context
 	implicit val defaultLanguageCode: String = "EN"
-	implicit val localizer: Localizer = NoLocalization
-	
-	// Creates component context
-	implicit val exc: ExecutionContext = new ThreadPool("Reflection").executionContext
-	val actorHandler = ActorHandler()
-	implicit val margins: Margins = Margins(16)
-	implicit val baseCB: ComponentContextBuilder = ComponentContextBuilder(actorHandler, Font("Arial", 16, Plain, 2),
-		Color.green, Color.yellow, 320, insets = StackInsets.symmetric(margins.small.any), stackMargin = margins.medium.downscaling,
-		relatedItemsStackMargin = Some(4.downscaling), textAlignment = Center, borderWidth = Some(1))
-	implicit val borderSettings: BorderSettings = BorderSettings(Color.textBlack, 1, 0.5)
-	
-	implicit val baseContext: ComponentContext = baseCB.result
 	
 	// Creates a test sudoku
 	def stringToGrid(str: String, gridIndex: Int) =
@@ -73,6 +52,8 @@ object SudokuProApp extends App
 		"xx9x3x7xx", "xx7x8x1xx", "xx2x7x8xx"
 	 */
 	
+	// These seem to be quite difficult: https://www.extremesudoku.info/
+	// Could use a swordfish
 	val sudoku = SudokuState(Vector(
 		"xx4x8x3xx", "xx5x4x7xx", "xx8x5x6xx",
 		"6xxx3xxx9", "4xxx2xxx1", "3xxx4xxx7",

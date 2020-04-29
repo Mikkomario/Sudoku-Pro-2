@@ -1,21 +1,22 @@
 package sudoku.view
 
-import sudoku.model.{BorderSettings, Grid}
+import sudoku.model.Grid
 import utopia.flow.datastructure.mutable.PointerWithEvents
 import utopia.reflection.component.RefreshableWithPointer
+import utopia.reflection.component.context.ColorContext
 import utopia.reflection.component.swing.StackableAwtComponentWrapperWrapper
 import utopia.reflection.controller.data.ContainerContentManager
-import utopia.reflection.shape.Margins
-import utopia.reflection.util.ComponentContextBuilder
 
 /**
  * Displays a sudoku grid
  * @author Mikko Hilpinen
  * @since 22.4.2020, v1
  */
-class GridVC(initialGrid: Grid)(implicit baseCB: ComponentContextBuilder, margins: Margins, borderSettings: BorderSettings)
+class GridVC(initialGrid: Grid)(implicit parentContext: ColorContext)
 	extends StackableAwtComponentWrapperWrapper with RefreshableWithPointer[Grid]
 {
+	import DefaultContext._
+	
 	// ATTRIBUTES	--------------------------
 	
 	override val contentPointer = new PointerWithEvents[Grid](initialGrid)
@@ -36,7 +37,7 @@ class GridVC(initialGrid: Grid)(implicit baseCB: ComponentContextBuilder, margin
 	// INITIAL CODE	--------------------------
 	
 	contentPointer.addListener { e => manager.content = e.newValue.slots }
-	container.addCustomDrawer(borderSettings.gridBorderDrawer)
+	parentContext.forTextComponents().use { implicit c => container.addCustomDrawer(borderSettings.gridBorderDrawer) }
 	
 	
 	// IMPLEMENTED	--------------------------

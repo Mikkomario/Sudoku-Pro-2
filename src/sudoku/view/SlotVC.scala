@@ -1,40 +1,41 @@
 package sudoku.view
 
 import sudoku.model.SolvableGroupType.{Column, Grid, Row}
-import sudoku.model.{BorderSettings, Slot, SolvableGroupType}
+import sudoku.model.{Slot, SolvableGroupType}
 import utopia.genesis.color.Color
 import utopia.reflection.component.RefreshableWithPointer
+import utopia.reflection.component.context.ColorContext
 import utopia.reflection.component.drawing.immutable.TextDrawContext
 import utopia.reflection.component.drawing.template.DrawLevel.Normal
 import utopia.reflection.component.drawing.template.TextDrawer
 import utopia.reflection.component.swing.StackableAwtComponentWrapperWrapper
 import utopia.reflection.component.swing.label.ItemLabel
 import utopia.reflection.localization.{DisplayFunction, LocalizedString}
-import utopia.reflection.shape.{Margins, StackInsets}
-import utopia.reflection.util.{ComponentContext, ComponentContextBuilder}
+import utopia.reflection.shape.StackInsets
 import utopia.reflection.shape.LengthExtensions._
 import utopia.reflection.localization.LocalString._
 import utopia.reflection.shape.Alignment.{BottomLeft, Center, TopLeft, TopRight}
 
 object SlotVC
 {
+	import DefaultContext._
+	
 	/**
 	 * Creates a slot-number label
 	 * @param firstItem The first displayed item
 	 * @param displayFunction Display function (default = toString)
-	 * @param baseCB Component context builder (implicit)
-	 * @param margins Margins (implicit)
-	 * @param borderSettings Border settings (implicit)
+	 * @param context Component creation (color) context
 	 * @tparam A Type of displayed item
 	 * @return A new label
 	 */
 	def makeNumberLabel[A](firstItem: A, displayFunction: DisplayFunction[A] = DisplayFunction.raw)
-						  (implicit baseCB: ComponentContextBuilder, margins: Margins, borderSettings: BorderSettings) =
+						  (implicit context: ColorContext) =
 	{
-		implicit val context: ComponentContext = baseCB.withInsets(StackInsets.symmetric(margins.medium.upscaling)).result
-		val label = ItemLabel.contextual(firstItem, displayFunction)
-		label.addCustomDrawer(borderSettings.slotBorderDrawer)
-		label
+		context.forTextComponents(Center, textInsets = StackInsets.symmetric(margins.medium.upscaling)).use { implicit txtC =>
+			val label = ItemLabel.contextual(firstItem, displayFunction)
+			label.addCustomDrawer(borderSettings.slotBorderDrawer)
+			label
+		}
 	}
 }
 
@@ -43,9 +44,11 @@ object SlotVC
  * @author Mikko Hilpinen
  * @since 22.4.2020, v1
  */
-class SlotVC(initialSlot: Slot)(implicit baseCB: ComponentContextBuilder, margins: Margins, borderSettings: BorderSettings)
+class SlotVC(initialSlot: Slot)(implicit parentContext: ColorContext)
 	extends StackableAwtComponentWrapperWrapper with RefreshableWithPointer[Slot]
 {
+	import DefaultContext._
+	
 	// ATTRIBUTES	--------------------------
 	
 	private val label = SlotVC.makeNumberLabel(initialSlot, DisplayFunction.noLocalization[Slot] {
@@ -95,7 +98,7 @@ class SlotVC(initialSlot: Slot)(implicit baseCB: ComponentContextBuilder, margin
 	
 	object AvailableNumbersDrawer extends TextDrawer
 	{
-		override val drawContext = TextDrawContext(baseCB.font * 0.5, alignment = Center)
+		override val drawContext = TextDrawContext(parentContext.defaultFont * 0.5, alignment = Center)
 		
 		override def text =
 		{
@@ -120,7 +123,7 @@ class SlotVC(initialSlot: Slot)(implicit baseCB: ComponentContextBuilder, margin
 	{
 		override val drawContext =
 		{
-			val font = baseCB.font * 0.5
+			val font = parentContext.defaultFont * 0.5
 			val insets = StackInsets.symmetric(margins.small.any)
 			targetGroupType match
 			{

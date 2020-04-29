@@ -1,64 +1,63 @@
 package sudoku.view
 
 import sudoku.controller.Solver
-import sudoku.model.{BorderSettings, SudokuState}
+import sudoku.model.SudokuState
 import utopia.genesis.color.Color
 import utopia.genesis.event.MouseMoveEvent
 import utopia.genesis.handling.MouseMoveListener
 import utopia.inception.handling.immutable.Handleable
 import utopia.reflection.component.Area
+import utopia.reflection.component.context.ColorContext
 import utopia.reflection.component.drawing.immutable.BorderDrawer
 import utopia.reflection.component.swing.StackableAwtComponentWrapperWrapper
 import utopia.reflection.component.swing.button.TextButton
 import utopia.reflection.component.swing.label.TextLabel
 import utopia.reflection.container.stack.StackLayout.Trailing
 import utopia.reflection.container.swing.{AwtContainerRelated, Stack}
-import utopia.reflection.localization.Localizer
-import utopia.reflection.shape.{Border, Margins, SymmetricStackSizeConstraint}
+import utopia.reflection.shape.{Border, SymmetricStackSizeConstraint}
 import utopia.reflection.shape.LengthExtensions._
-import utopia.reflection.util.{ComponentContext, ComponentContextBuilder}
 import utopia.reflection.localization.LocalString._
-
-import scala.concurrent.ExecutionContext
+import utopia.reflection.shape.Alignment.Center
 
 /**
  * This view controller is used for handling the whole puzzle
  * @author Mikko Hilpinen
  * @since 24.4.2020, v1
  */
-class MainVC(initialSudoku: SudokuState)
-			(implicit baseCB: ComponentContextBuilder, margins: Margins, borderSettings: BorderSettings,
-			 localizer: Localizer, exc: ExecutionContext)
-	extends StackableAwtComponentWrapperWrapper with AwtContainerRelated
+class MainVC(initialSudoku: SudokuState) extends StackableAwtComponentWrapperWrapper with AwtContainerRelated
 {
+	import DefaultContext._
+	
 	// ATTRIBUTES	------------------------
 	
 	private implicit val languageCode: String = "en"
-	private implicit val baseContext: ComponentContext = baseCB.result
+	private val bgColor = colorScheme.primary
+	private implicit val context: ColorContext = baseContext.inContextWithBackground(bgColor)
 	
-	private val sudokuVC = new SudokuVC(initialSudoku)
-	private val solveNextButton = TextButton.contextual("Next", () => {
-		val result = Solver(currentSudoku)
-		if (result.wasSuccess)
-		{
-			println(result.description.getOrElse("Success"))
-			currentSudoku = result.newState
-			sudokuVC.highlight(result.modifiedSlots, result.relatedSlots)
+	private val sudokuVC = new SudokuVC(initialSudoku, context)
+	private val solveNextButton = context.forTextComponents(Center).forSecondaryColorButtons.use { implicit btnC =>
+		TextButton.contextual("Next") {
+			val result = Solver(currentSudoku)
+			if (result.wasSuccess)
+			{
+				println(result.description.getOrElse("Success"))
+				currentSudoku = result.newState
+				sudokuVC.highlight(result.modifiedSlots, result.relatedSlots)
+			}
+			else
+				println("Can't solve next :(")
 		}
-		else
-			println("Can't solve next :(")
-	})
-	private val numberButtons =
-	{
-		val backgroundColor = Color.blue.lightened(1.5).timesSaturation(0.55)
-		val numberButtonContext = baseCB.withColors(backgroundColor).result
-		val borderDrawer = new BorderDrawer(Border.raised(2, backgroundColor, 0.25))
+	}
+	private val numberButtons = context.forTextComponents(Center).forPrimaryColorButtons.use { implicit btnC =>
+		
+		val borderDrawer = new BorderDrawer(Border.raised(2, btnC.buttonColor, 0.25))
 		
 		(1 to 9).map { number =>
-			val label = TextLabel.contextual(number.toString.noLanguageLocalizationSkipped)(numberButtonContext)
+			val label = TextLabel.contextualWithBackground(btnC.buttonColor, number.toString.noLanguageLocalizationSkipped)
 			label.addCustomDrawer(borderDrawer)
 			label.addConstraint(SymmetricStackSizeConstraint)
 			label.addMouseMoveListener(new NumberHoverListener(label, number))
+			println(label.background)
 			label
 		}
 	}
@@ -66,7 +65,7 @@ class MainVC(initialSudoku: SudokuState)
 		s += Stack.buildRowWithContext() { row => numberButtons.foreach { row += _ } }
 		s += sudokuVC
 		s += solveNextButton
-	}.framed(margins.medium.any.square, Color.white)
+	}.framed(margins.medium.any.square, bgColor)
 	
 	
 	// COMPUTED	----------------------------
