@@ -2,7 +2,6 @@ package sudoku.view
 
 import sudoku.controller.Solver
 import sudoku.model.SudokuState
-import utopia.genesis.color.Color
 import utopia.genesis.event.MouseMoveEvent
 import utopia.genesis.handling.MouseMoveListener
 import utopia.inception.handling.immutable.Handleable
@@ -57,7 +56,6 @@ class MainVC(initialSudoku: SudokuState) extends StackableAwtComponentWrapperWra
 			label.addCustomDrawer(borderDrawer)
 			label.addConstraint(SymmetricStackSizeConstraint)
 			label.addMouseMoveListener(new NumberHoverListener(label, number))
-			println(label.background)
 			label
 		}
 	}

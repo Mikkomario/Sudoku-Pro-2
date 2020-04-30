@@ -51,13 +51,19 @@ object SudokuProApp extends App
 		"1xxx5xxx3", "2xxx4xxx5", "7xxx6xxx1",
 		"xx9x3x7xx", "xx7x8x1xx", "xx2x7x8xx"
 	 */
+	/*
+	Very difficult but not very interesting sudoku. Required 2 x-wings and 1 manual chain deduction
+	"xx4x8x3xx", "xx5x4x7xx", "xx8x5x6xx",
+		"6xxx3xxx9", "4xxx2xxx1", "3xxx4xxx7",
+		"xx5x6x2xx", "xx2x8x9xx", "xx1x7x4xx"
+	 */
 	
 	// These seem to be quite difficult: https://www.extremesudoku.info/
 	// Could use a swordfish
 	val sudoku = SudokuState(Vector(
-		"xx4x8x3xx", "xx5x4x7xx", "xx8x5x6xx",
-		"6xxx3xxx9", "4xxx2xxx1", "3xxx4xxx7",
-		"xx5x6x2xx", "xx2x8x9xx", "xx1x7x4xx").mapWithIndex { (str, index) => stringToGrid(str, index)
+		"xx2x9x4xx", "xx3x6x9xx", "xx4x8x6xx",
+		"1xxx5xxx3", "2xxx4xxx5", "7xxx6xxx1",
+		"xx9x3x7xx", "xx7x8x1xx", "xx2x7x8xx").mapWithIndex { (str, index) => stringToGrid(str, index)
 	}.toVector)
 	
 	// Creates the component to display
