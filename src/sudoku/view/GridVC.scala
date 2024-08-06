@@ -1,11 +1,11 @@
 package sudoku.view
 
 import sudoku.model.Grid
-import utopia.flow.datastructure.mutable.PointerWithEvents
-import utopia.reflection.component.RefreshableWithPointer
-import utopia.reflection.component.context.ColorContext
-import utopia.reflection.component.swing.StackableAwtComponentWrapperWrapper
-import utopia.reflection.controller.data.ContainerContentManager
+import utopia.flow.view.mutable.eventful.EventfulPointer
+import utopia.firmament.component.display.RefreshableWithPointer
+import utopia.firmament.context.ColorContext
+import utopia.firmament.controller.data.ContainerContentDisplayer
+import utopia.reflection.component.swing.template.StackableAwtComponentWrapperWrapper
 
 /**
  * Displays a sudoku grid
@@ -19,11 +19,10 @@ class GridVC(initialGrid: Grid)(implicit parentContext: ColorContext)
 	
 	// ATTRIBUTES	--------------------------
 	
-	override val contentPointer = new PointerWithEvents[Grid](initialGrid)
-	private val container = new GridContainer[SlotVC]
+	override val contentPointer = EventfulPointer[Grid](initialGrid)
+	private val slotsPointer = contentPointer.map { _.slots }
 	
-	private val manager = ContainerContentManager.forImmutableStates(container, initialGrid.slots) { _.position == _.position } {
-		slot => new SlotVC(slot) }
+	private val container = new GridContainer[SlotVC]
 	
 	
 	// COMPUTED	-----------------------------
@@ -36,8 +35,10 @@ class GridVC(initialGrid: Grid)(implicit parentContext: ColorContext)
 	
 	// INITIAL CODE	--------------------------
 	
-	contentPointer.addListener { e => manager.content = e.newValue.slots }
-	parentContext.forTextComponents().use { implicit c => container.addCustomDrawer(borderSettings.gridBorderDrawer) }
+	ContainerContentDisplayer.forImmutableStates(container, slotsPointer) { _.position == _.position } {
+		slot => new SlotVC(slot) }
+	
+	parentContext.forTextComponents.use { implicit c => container.addCustomDrawer(borderSettings.gridBorderDrawer) }
 	
 	
 	// IMPLEMENTED	--------------------------

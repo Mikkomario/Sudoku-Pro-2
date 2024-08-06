@@ -1,10 +1,11 @@
 package sudoku.test
 
 import sudoku.controller.Solver
-import utopia.flow.util.CollectionExtensions._
-import utopia.flow.util.TimeExtensions._
+import sudoku.view.DefaultContext._
+import utopia.flow.collection.CollectionExtensions._
+import utopia.flow.time.TimeExtensions._
 import sudoku.model.{Grid, Position, Slot, SolveResult, SudokuState}
-import utopia.flow.util.WaitUtils
+import utopia.flow.async.process.Wait
 
 /**
  * Attempts to solve a sudoku (non-visual)
@@ -67,7 +68,7 @@ object SolveTest extends App
 		else
 			println("Failure")
 		
-		WaitUtils.wait(0.2.seconds, waitLock)
+		Wait(0.2.seconds, waitLock)
 	}
 	while (lastResult.wasSuccess && !lastResult.newState.isSolved)
 	

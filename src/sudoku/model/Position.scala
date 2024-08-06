@@ -1,8 +1,8 @@
 package sudoku.model
 
-import utopia.genesis.shape.Axis.{X, Y}
-import utopia.genesis.shape.Axis2D
-import utopia.genesis.shape.shape2D.Point
+import utopia.paradigm.enumeration.Axis.{X, Y}
+import utopia.paradigm.enumeration.Axis2D
+import utopia.paradigm.shape.shape2d.vector.point.Point
 
 /**
  * Simply an x-y-coordinate pair on the grid

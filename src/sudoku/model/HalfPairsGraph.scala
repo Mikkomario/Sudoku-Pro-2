@@ -2,9 +2,9 @@ package sudoku.model
 
 import sudoku.model.SolvableGroupType.{Column, Row}
 import sudoku.util.MultiMapBuilder
-import utopia.flow.datastructure.immutable.Graph
-import utopia.flow.datastructure.immutable.Graph.GraphViewNode
-import utopia.flow.util.CollectionExtensions._
+import utopia.flow.collection.immutable.{Graph, Pair}
+import utopia.flow.collection.immutable.Graph.GraphViewNode
+import utopia.flow.collection.CollectionExtensions._
 
 import scala.collection.mutable
 
@@ -50,7 +50,7 @@ object HalfPairsGraph
 		val graphsByCategory = groupedNumberSlots.map { case (category, linksByIndex) =>
 			// There's an edge between each same-number slots in a shared index
 			val links = linksByIndex.values.flatMap { _.flatMap { case (number, slots) =>
-				slots.paired.map { case (slot1, slot2) => (slot1, number, slot2) }
+				slots.paired.map { case Pair(slot1, slot2) => (slot1, number, slot2) }
 			} }.toSet
 			// Creates a graph based on each category of links
 			category -> Graph(links, isTwoWayBound = true)
@@ -104,8 +104,8 @@ case class HalfPairsGraph private(private val graphsByCategory: Map[SolvableGrou
 			val routes = node.routesToSelf.filter { _.size > 2 }
 			routes.map { route =>
 				// Checks which numbers and which slots were traversed
-				val numbers = route.map { _.content }.toSet
-				val slots = route.map { _.end.content }.toSet
+				val numbers = route.map { _.value }.toSet
+				val slots = route.map { _.end.value }.toSet
 				slots -> numbers
 			}
 		}
@@ -125,7 +125,7 @@ case class HalfPairsGraph private(private val graphsByCategory: Map[SolvableGrou
 			// Otherwise starts the chains from an arbitrary node
 			val startNode = chainGraph.nodes.find { _.leavingEdges.map { _.end }.size == 1 }.getOrElse(chainGraph.nodes.head)
 			// Registers all possible chains that include this node
-			startNode.toTreeWithoutEdges.allBranches.map { chain => startNode.content +: chain }
+			startNode.toTree.branches.map { _.map { _.nav.value } }
 		}
 	}
 	
@@ -148,5 +148,5 @@ case class HalfPairsGraph private(private val graphsByCategory: Map[SolvableGrou
 	def twinChainsFrom(slot: Slot) = chainsFromNode(twins(slot))
 	
 	private def chainsFromNode(node: GraphViewNode[Slot, _]) =
-		node.toTreeWithoutEdges.allBranches.map { branch => node.content +: branch }
+		node.toTree.branches.map { _.map { _.nav.value } }
 }

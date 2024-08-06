@@ -1,6 +1,5 @@
 package sudoku.controller
 
-import utopia.flow.util.CollectionExtensions._
 import sudoku.model.{FullSlotsGroup, Slot, SolvableGroupType}
 
 object FindHalfPlaces
@@ -25,8 +24,7 @@ class FindHalfPlaces(override val targetType: SolvableGroupType) extends SolveNe
 	
 	// IMPLEMENTED	----------------------------
 	
-	override protected def solve[G <: FullSlotsGroup[G]](group: G) =
-	{
+	override protected def solve[G <: FullSlotsGroup[G]](group: G) = {
 		val missingNumbers = group.missingNumbers
 		val emptySlots = group.emptySlots
 		// Finds cases where there are exactly 2 positions a number can go
@@ -39,12 +37,10 @@ class FindHalfPlaces(override val targetType: SolvableGroupType) extends SolveNe
 		}
 		
 		// Assigns the numbers to slots, creating a new group
-		if (assignments.nonEmpty)
-		{
-			val assignmentsPerSlot = assignments.toVector.asMultiMap
+		if (assignments.nonEmpty) {
+			val assignmentsPerSlot = assignments.groupMap { _._1 } { _._2 }
 			group.trySolveMap { slot =>
-				assignmentsPerSlot.get(slot) match
-				{
+				assignmentsPerSlot.get(slot) match {
 					case Some(numbers) => slot.withHalfPlaces(targetType, numbers.toSet)
 					case None => slot
 				}

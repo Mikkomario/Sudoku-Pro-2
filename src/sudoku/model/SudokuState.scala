@@ -1,8 +1,8 @@
 package sudoku.model
 
-import utopia.flow.util.CollectionExtensions._
-import utopia.genesis.shape.Axis.{X, Y}
-import utopia.genesis.shape.Axis2D
+import utopia.flow.collection.CollectionExtensions._
+import utopia.paradigm.enumeration.Axis.{X, Y}
+import utopia.paradigm.enumeration.Axis2D
 
 object SudokuState extends GridFactory[Grid, SudokuState]
 

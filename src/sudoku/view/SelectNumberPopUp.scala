@@ -1,17 +1,18 @@
 package sudoku.view
 
-import utopia.flow.datastructure.mutable.PointerWithEvents
-import utopia.genesis.color.Color
-import utopia.genesis.event.ConsumeEvent
-import utopia.genesis.handling.MouseButtonStateListener
-import utopia.reflection.component.ComponentLike
-import utopia.reflection.component.drawing.immutable.BackgroundDrawer
-import utopia.reflection.component.swing.AwtComponentRelated
+import utopia.firmament.drawing.immutable.BackgroundDrawer
+import utopia.flow.view.mutable.eventful.EventfulPointer
+import utopia.genesis.handling.event.consume.ConsumeChoice.Consume
+import utopia.genesis.handling.event.mouse.MouseButtonStateListener
+import utopia.paradigm.color.Color
+import utopia.paradigm.enumeration.Alignment.Center
 import utopia.reflection.component.swing.label.ItemLabel
-import utopia.reflection.container.swing.Stack
+import utopia.reflection.component.swing.template.AwtComponentRelated
+import utopia.reflection.component.template.ReflectionComponentLike
+import utopia.reflection.container.swing.layout.multi.Stack
 import utopia.reflection.container.swing.window.Popup
+import utopia.reflection.container.swing.window.Popup.PopupAutoCloseLogic.WhenClickedOutside
 import utopia.reflection.controller.data.ContainerSelectionManager
-import utopia.reflection.shape.Alignment.Center
 
 /**
  * This pop-up can be used for selecting a number
@@ -31,34 +32,32 @@ object SelectNumberPopUp
 	 * @param isDeleteMode Whether layout should be highlighted to deletion
 	 * @return Future of the pop-up closing and number selection
 	 */
-	def display(over: ComponentLike with AwtComponentRelated, numbers: Vector[Int], isDeleteMode: Boolean = false) =
+	def display(over: ReflectionComponentLike with AwtComponentRelated, numbers: Vector[Int], isDeleteMode: Boolean = false) =
 	{
-		val background =
-		{
+		val background = {
 			if (isDeleteMode)
 				Color.red.withSaturation(0.25)
 			else
 				Color.green.withSaturation(0.25)
 		}
 		
-		baseContext.inContextWithBackground(background).use { implicit context =>
+		baseContext.against(background).use { implicit context =>
 			// Creates the display components
-			val selectedNumberPointer = new PointerWithEvents[Option[Int]](None)
-			val numbersContainer =
-			{
+			val selectedNumberPointer = EventfulPointer[Option[Int]](None)
+			val numbersContainer = {
 				if (numbers.size == 4 || numbers.size == 9)
 					new GridContainer[ItemLabel[Int]]
 				else
 					Stack.row[ItemLabel[Int]]()
 			}
 			val manager = ContainerSelectionManager.forStatelessItems(numbersContainer,
-				new BackgroundDrawer(Color.blue.timesSaturation(0.22)), numbers.sorted) { i =>
+				BackgroundDrawer(Color.blue.timesSaturation(0.22)), numbers.sorted) { i =>
 				val label = SlotVC.makeNumberLabel(i)
 				label.component.setFocusable(true)
 				label.setHandCursor()
-				label.addMouseButtonListener(MouseButtonStateListener.onLeftPressedInside(label.bounds) { _ =>
+				label.addMouseButtonListener(MouseButtonStateListener.leftPressed.over(label.bounds) { _ =>
 					selectedNumberPointer.value = Some(label.content)
-					Some(ConsumeEvent("Number label selected"))
+					Consume("Number label selected")
 				})
 				label
 			}
@@ -67,14 +66,16 @@ object SelectNumberPopUp
 				numbersContainer.background = Color.red.withSaturation(0.25)
 			else
 				numbersContainer.background = Color.green.withSaturation(0.25)
-			context.forTextComponents(Center).use { implicit txtC =>
+			context.withCenteredText.use { implicit txtC =>
 				numbersContainer.addCustomDrawer(borderSettings.gridBorderDrawer)
 			}
 			
 			// Displays the components in a pop-up
 			val popup = Popup(over, numbersContainer, actorHandler,
-				resizeAlignment = Center) { (cSize, wSize) => (cSize/2 - wSize/2).toPoint }
+				resizeAlignment = Center, autoCloseLogic = WhenClickedOutside) {
+				(cSize, wSize) => (cSize/2 - wSize/2).toPoint }
 			
+			// Displays pop-up
 			popup.display()
 			
 			// Adds number selection listening
@@ -84,7 +85,6 @@ object SelectNumberPopUp
 				manager.value = e.newValue
 			}
 			
-			// Displays pop-up
 			popup.closeFuture.map { _ => selectedNumberPointer.value }
 		}
 	}

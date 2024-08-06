@@ -1,6 +1,6 @@
 package sudoku.controller
 
-import utopia.flow.util.CollectionExtensions._
+import utopia.flow.collection.CollectionExtensions._
 import sudoku.model.{Slot, SolveResult, SudokuState}
 import sudoku.util.MultiMapBuilder
 
@@ -40,13 +40,13 @@ object ChainAssociationsExclusion extends SolveAlgorithm
 				// Tests each slot that is associated with two links in a same chain. If the slot is associated with both,
 				// it cannot contain the common number between those links
 				twinChains.foreach { chain =>
-					chain.toVector.paired.foreach { case (a, b) =>
-						(a.availableNumbers & b.availableNumbers).foreach { commonNumber =>
+					chain.toVector.paired.foreach { slots =>
+						slots.mapAndMerge { _.availableNumbers } { _ & _ }.foreach { commonNumber =>
 							// Will, of course, not touch the chain slots themselves
-							(associations.slotsAssociatedWithBoth(a, b) -- protectedSlots).filterNot { _.cantBe.contains(commonNumber) }
+							(associations.slotsAssociatedWithAll(slots) -- protectedSlots).filterNot { _.cantBe.contains(commonNumber) }
 								.foreach { slot =>
 									restrictionsBuilder += slot -> commonNumber
-									affectedSlotsBuilder ++= slot -> Set(a, b)
+									affectedSlotsBuilder ++= slot -> slots
 								}
 						}
 					}

@@ -1,6 +1,6 @@
 package sudoku.controller
 
-import utopia.flow.util.CollectionExtensions._
+import utopia.flow.collection.CollectionExtensions._
 
 import sudoku.model.{SolveResult, SudokuState}
 

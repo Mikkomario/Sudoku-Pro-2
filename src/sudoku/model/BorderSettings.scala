@@ -1,8 +1,8 @@
 package sudoku.model
 
-import utopia.reflection.component.context.TextContextLike
-import utopia.reflection.component.drawing.immutable.BorderDrawer
-import utopia.reflection.shape.Border
+import utopia.firmament.context.TextContext
+import utopia.firmament.drawing.immutable.BorderDrawer
+import utopia.firmament.model.Border
 
 /**
  * Specifies slot border display visuals
@@ -11,9 +11,9 @@ import utopia.reflection.shape.Border
  */
 case class BorderSettings(gridBorderWidth: Double, slotBorderWidth: Double)
 {
-	def slotBorder(implicit context: TextContextLike) = Border.square(slotBorderWidth, context.textColor.timesAlpha(0.66))
-	def gridBorder(implicit context: TextContextLike) = Border.square(gridBorderWidth, context.textColor)
+	def slotBorder(implicit context: TextContext) = Border.symmetric(slotBorderWidth, context.textColor.timesAlpha(0.66))
+	def gridBorder(implicit context: TextContext) = Border.symmetric(gridBorderWidth, context.textColor)
 	
-	def slotBorderDrawer(implicit context: TextContextLike) = new BorderDrawer(slotBorder)
-	def gridBorderDrawer(implicit context: TextContextLike) = new BorderDrawer(gridBorder)
+	def slotBorderDrawer(implicit context: TextContext) = BorderDrawer(slotBorder)
+	def gridBorderDrawer(implicit context: TextContext) = BorderDrawer(gridBorder)
 }

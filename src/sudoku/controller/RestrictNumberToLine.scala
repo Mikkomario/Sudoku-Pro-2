@@ -1,8 +1,7 @@
 package sudoku.controller
 
 import sudoku.model.{SolveResult, SudokuState}
-import utopia.flow.util.CollectionExtensions._
-import utopia.genesis.shape.Axis2D
+import utopia.paradigm.enumeration.Axis2D
 
 /**
  * Checks whether there are half-number pairs (single pairs) inside a single line in a grid.
@@ -23,22 +22,24 @@ object RestrictNumberToLine extends SolveAlgorithm
 		sudoku.trySolveNextGrid { grid =>
 			// Finds the two required positions for each restricted number
 			// Number -> [Only allowed positions]
-			val restrictions = Axis2D.values.flatMap { axis =>
-				val lines = grid.lines(axis)
-				lines.flatMap { line =>
-					val allHalfNumbersWithPositions = line.flatMap { slot => slot.halfPlacesFor(axis).map { _ -> slot.position } }
-					val uniqueHalfNumbers = allHalfNumbersWithPositions.map { _._1 }.toSet
-					val doubleHalfNumbers = uniqueHalfNumbers.filter { number => allHalfNumbersWithPositions.count { _._1 == number } > 1 }
-					
-					if (doubleHalfNumbers.nonEmpty)
-					{
-						// println(s"Found double half-numbers in grid ${grid.position}: [${doubleHalfNumbers.mkString(", ")}]")
-						allHalfNumbersWithPositions.filter { case (number, _) => doubleHalfNumbers.contains(number) }
+			val restrictions = Axis2D.values
+				.flatMap { axis =>
+					val lines = grid.lines(axis)
+					lines.flatMap { line =>
+						val allHalfNumbersWithPositions = line.flatMap { slot => slot.halfPlacesFor(axis).map { _ -> slot.position } }
+						val uniqueHalfNumbers = allHalfNumbersWithPositions.map { _._1 }.toSet
+						val doubleHalfNumbers = uniqueHalfNumbers.filter { number => allHalfNumbersWithPositions.count { _._1 == number } > 1 }
+						
+						if (doubleHalfNumbers.nonEmpty)
+						{
+							// println(s"Found double half-numbers in grid ${grid.position}: [${doubleHalfNumbers.mkString(", ")}]")
+							allHalfNumbersWithPositions.filter { case (number, _) => doubleHalfNumbers.contains(number) }
+						}
+						else
+							Vector()
 					}
-					else
-						Vector()
 				}
-			}.asMultiMap
+				.groupMap { _._1 } { _._2 }
 			
 			if (restrictions.nonEmpty)
 			{

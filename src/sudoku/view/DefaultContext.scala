@@ -1,15 +1,15 @@
 package sudoku.view
 
 import sudoku.model.BorderSettings
-import utopia.flow.async.ThreadPool
-import utopia.genesis.color.Color
-import utopia.genesis.handling.mutable.ActorHandler
-import utopia.reflection.color.{ColorScheme, ColorSet}
-import utopia.reflection.component.context.BaseContext
-import utopia.reflection.localization.{Localizer, NoLocalization}
-import utopia.reflection.shape.Margins
-import utopia.reflection.text.Font
-import utopia.reflection.text.FontStyle.Plain
+import utopia.firmament.context.BaseContext
+import utopia.firmament.localization.{Localizer, NoLocalization}
+import utopia.firmament.model.Margins
+import utopia.flow.async.context.ThreadPool
+import utopia.flow.util.logging.{Logger, SysErrLogger}
+import utopia.genesis.handling.action.ActorHandler
+import utopia.genesis.text.Font
+import utopia.genesis.text.FontStyle.Plain
+import utopia.paradigm.color.{ColorScheme, ColorSet}
 
 import scala.concurrent.ExecutionContext
 
@@ -24,11 +24,12 @@ object DefaultContext
 	implicit val localizer: Localizer = NoLocalization
 	
 	// Creates component context
-	implicit val exc: ExecutionContext = new ThreadPool("Sudoku Pro").executionContext
+	implicit val log: Logger = SysErrLogger
+	implicit val exc: ExecutionContext = new ThreadPool("Sudoku Pro")
 	
 	val primaryColors = ColorSet.fromHexes("#e1f5fe", "#ffffff", "#afc2cb").get
 	val secondaryColors = ColorSet.fromHexes("#ff6e40", "#ffa06d", "#c53d13").get
-	val colorScheme = ColorScheme(primaryColors, secondaryColors)
+	val colorScheme = ColorScheme.twoTone(primaryColors, secondaryColors)
 	
 	val actorHandler = ActorHandler()
 	val margins: Margins = Margins(16)

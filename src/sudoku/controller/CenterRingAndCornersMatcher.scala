@@ -2,9 +2,11 @@ package sudoku.controller
 
 import sudoku.model.{Grid, Slot, SolvableGroupType, SolveResult, SudokuState}
 import sudoku.util.MultiMapBuilder
-import utopia.genesis.shape.Axis2D
-import utopia.genesis.shape.shape2D.{Bounds, Point, Size}
-import utopia.reflection.localization.LocalString
+import utopia.paradigm.enumeration.Axis2D
+import utopia.firmament.localization.LocalString
+import utopia.paradigm.shape.shape2d.area.polygon.c4.bounds.Bounds
+import utopia.paradigm.shape.shape2d.vector.point.Point
+import utopia.paradigm.shape.shape2d.vector.size.Size
 
 /**
  * This solver utilizes an interesting fact about a 45 slot sudoku board where the "center ring" (slots around (outside) the

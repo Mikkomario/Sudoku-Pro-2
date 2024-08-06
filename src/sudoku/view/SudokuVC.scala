@@ -1,25 +1,27 @@
 package sudoku.view
 
-import java.awt.event.KeyEvent
-
 import sudoku.model.{Position, Slot, SudokuState}
-import utopia.flow.datastructure.mutable.PointerWithEvents
-import utopia.flow.util.TimeExtensions._
-import utopia.flow.util.CollectionExtensions._
-import utopia.genesis.color.Color
-import utopia.genesis.event.{KeyStateEvent, MouseButtonStateEvent}
-import utopia.genesis.handling.{Actor, KeyStateListener, MouseButtonStateListener}
-import utopia.genesis.shape.Vector3D
-import utopia.genesis.shape.shape2D.{Bounds, Line}
-import utopia.genesis.util.Drawer
-import utopia.inception.handling.HandlerType
-import utopia.reflection.component.RefreshableWithPointer
-import utopia.reflection.component.context.ColorContext
-import utopia.reflection.component.drawing.mutable.CustomDrawableWrapper
-import utopia.reflection.component.drawing.template.CustomDrawer
-import utopia.reflection.component.drawing.template.DrawLevel.Normal
-import utopia.reflection.component.swing.StackableAwtComponentWrapperWrapper
-import utopia.reflection.controller.data.ContainerContentManager
+import utopia.firmament.component.display.RefreshableWithPointer
+import utopia.firmament.context.ColorContext
+import utopia.firmament.controller.data.ContainerContentDisplayer
+import utopia.firmament.drawing.mutable.MutableCustomDrawableWrapper
+import utopia.firmament.drawing.template.CustomDrawer
+import utopia.flow.collection.CollectionExtensions._
+import utopia.flow.collection.immutable.Pair
+import utopia.flow.time.TimeExtensions._
+import utopia.flow.view.mutable.eventful.{EventfulPointer, ResettableFlag}
+import utopia.flow.view.template.eventful.FlagLike
+import utopia.genesis.graphics.DrawLevel.Normal
+import utopia.genesis.graphics.{DrawSettings, Drawer, StrokeSettings}
+import utopia.genesis.handling.action.Actor
+import utopia.genesis.handling.event.keyboard.Key.{CharKey, Control}
+import utopia.genesis.handling.event.keyboard.{KeyStateListener, KeyboardEvents}
+import utopia.genesis.handling.event.mouse.MouseButtonStateListener
+import utopia.paradigm.color.Color
+import utopia.paradigm.shape.shape2d.area.polygon.c4.bounds.Bounds
+import utopia.paradigm.shape.shape2d.line.Line
+import utopia.paradigm.shape.shape2d.vector.Vector2D
+import utopia.reflection.component.swing.template.StackableAwtComponentWrapperWrapper
 
 import scala.concurrent.duration.FiniteDuration
 
@@ -35,35 +37,35 @@ object SudokuVC
  * @since 22.4.2020, v1
  */
 class SudokuVC(initialState: SudokuState, parentContext: ColorContext)
-	extends StackableAwtComponentWrapperWrapper with RefreshableWithPointer[SudokuState] with CustomDrawableWrapper
+	extends StackableAwtComponentWrapperWrapper with RefreshableWithPointer[SudokuState]
+		with MutableCustomDrawableWrapper
 {
-	import SudokuVC._
 	import DefaultContext._
+	import SudokuVC._
 	
 	// ATTRIBUTES	----------------------------
 	
 	private val backgroundColor = colorScheme.gray.light
 	
-	val contentPointer = new PointerWithEvents[SudokuState](initialState)
+	val contentPointer = EventfulPointer[SudokuState](initialState)
+	private val gridsPointer = contentPointer.map { _.grids }
 	
-	private var highlightedNumber: Option[Int] = None
-	private var lastHighlightedNumber = 1
+	private val highlightedNumberPointer = EventfulPointer.empty[Int]()
+	private val lastHighlightedNumberPointer =
+		highlightedNumberPointer.incrementalMap { _.getOrElse(1) } { (prev, event) => event.oldValue.getOrElse(prev) }
 	
 	private val container = new GridContainer[GridVC]
-	private val manager = parentContext.inContextWithBackground(backgroundColor).use { implicit context =>
-		ContainerContentManager.forImmutableStates(container, initialState.grids) {
-			_.position == _.position } { grid => new GridVC(grid) }
-	}
 	
 	private var _lastModifiedSlots = Set[Slot]()
 	private var _relatedSlots = Set[Slot]()
-	private var remainingHighlightLevel = 0.0
+	private val remainingHighlightLevelPointer = EventfulPointer(0.0)
+	private val highlightedFlag = remainingHighlightLevelPointer.map { _ > 0 }
 	
-	private var numberHighlightLevel = 0.0
+	private val numberHighlightLevelPointer = EventfulPointer(0.0)
 	
 	private var currentlySelectedSlot: Option[Slot] = None
-	private var currentHighlightedLinks = Vector[(Slot, Slot)]()
-	private var highlightIsTwinRestricted = false
+	private var currentHighlightedLinks = Vector[Pair[Slot]]()
+	private val twinRestrictedHighlightingFlag = ResettableFlag()
 	
 	private var isCtrlPressed = false
 	private var saveStates = Vector[(SudokuState, Slot)]()
@@ -74,24 +76,38 @@ class SudokuVC(initialState: SudokuState, parentContext: ColorContext)
 	private def gridDisplays = container.components
 	private def slotDisplaysView = gridDisplays.view.flatMap { _.slotDisplays }
 	
-	private def isHighlighted = remainingHighlightLevel > 0
+	private def highlightedNumber: Option[Int] = highlightedNumberPointer.value
+	private def highlightedNumber_=(number: Int) = highlightedNumberPointer.value = Some(number)
+	
+	private def lastHighlightedNumber = lastHighlightedNumberPointer.value
+	
+	private def remainingHighlightLevel = remainingHighlightLevelPointer.value
+	private def remainingHighlightLevel_=(newLevel: Double) = remainingHighlightLevelPointer.value = newLevel
+	
+	private def numberHighlightLevel = numberHighlightLevelPointer.value
+	
+	private def isHighlighted = highlightedFlag.value
 	
 	
 	// INITIAL CODE	---------------------------
 	
 	container.background = backgroundColor
 	
-	contentPointer.addListener { e => manager.content = e.newValue.grids }
+	parentContext.against(backgroundColor).use { implicit context =>
+		ContainerContentDisplayer.forImmutableStates(container, gridsPointer) {
+			_.position == _.position } { grid => new GridVC(grid) }
+	}
+	
 	addCustomDrawer(ModifiedSlotsHighlighter)
 	addCustomDrawer(NumberHighlighter)
 	addCustomDrawer(LinksDrawer)
 	parentContext.actorHandler += HighLightUpdater
 	parentContext.actorHandler += NumberHighLightUpdater
 	
-	addKeyStateListener(KeyStateListener(KeyStateEvent.keyFilter(KeyEvent.VK_CONTROL)) { e => isCtrlPressed = e.isDown })
-	addKeyStateListener(KeyStateListener.onKeyPressed(KeyEvent.VK_Z) { e =>
-		if (e.keyStatus(KeyEvent.VK_CONTROL) && saveStates.nonEmpty)
-		{
+	KeyboardEvents += KeyStateListener(Control) { e => isCtrlPressed = e.pressed }
+	KeyboardEvents += KeyStateListener(CharKey('Z')).pressed { e =>
+		// TODO: Use handle condition instead (requires refactoring these to pointers)
+		if (e.keyboardState(Control) && saveStates.nonEmpty) {
 			val (oldState, cancelSlot) = saveStates.last
 			println(s"Cancelling last change: ${cancelSlot.position}")
 			content = oldState
@@ -99,23 +115,20 @@ class SudokuVC(initialState: SudokuState, parentContext: ColorContext)
 			// FIXME: Doesn't draw cancelled slot data correctly!
 			saveStates = saveStates.dropRight(1)
 		}
-	})
+	}
 	
-	addMouseButtonListener(MouseButtonStateListener(MouseButtonStateEvent.wasPressedFilter) { e =>
+	addMouseButtonListener(MouseButtonStateListener.pressed { e =>
 		// Finds the slot that was pressed
-		val positionInContainer = e.positionOverArea(container.bounds)
+		val positionInContainer = e.position - container.position
 		container.components.find { _.bounds.contains(positionInContainer) }.flatMap { grid =>
 			val positionInGrid = positionInContainer - grid.position
 			grid.slotDisplays.find { _.bounds.contains(positionInGrid) }
-		} match
-		{
+		} match {
 			case Some(clickedSlotVC) =>
 				val slot = clickedSlotVC.content
 				// On left mouse click, displays number selection screen (except for solved slots)
-				if (e.isLeftMouseButton)
-				{
-					if (slot.nonSolved)
-					{
+				if (e.concernsLeft) {
+					if (slot.nonSolved) {
 						val isDeleting = isCtrlPressed
 						SelectNumberPopUp.display(clickedSlotVC, slot.availableNumbers.toVector, isDeleteMode = isDeleting).foreach { num =>
 							num.foreach { selectedNumber =>
@@ -130,26 +143,20 @@ class SudokuVC(initialState: SudokuState, parentContext: ColorContext)
 					}
 				}
 				// Changes highlighting on right click
-				else if (e.isRightMouseButton)
-				{
-					if (currentlySelectedSlot.exists { _.position == slot.position } || slot.isSolved)
-					{
+				else if (e.concernsRight) {
+					if (currentlySelectedSlot.exists { _.position == slot.position } || slot.isSolved) {
 						currentlySelectedSlot = None
 						currentHighlightedLinks = Vector()
 					}
-					else
-					{
-						val chains =
-						{
+					else {
+						val chains = {
 							// On ctrl + click on twin slot, highlights twin chains
-							if (isCtrlPressed && slot.availableNumbers.size == 2)
-							{
-								highlightIsTwinRestricted = true
+							if (isCtrlPressed && slot.availableNumbers.size == 2) {
+								twinRestrictedHighlightingFlag.set()
 								content.halfPairsGraph.twinChainsFrom(slot)
 							}
-							else
-							{
-								highlightIsTwinRestricted = false
+							else {
+								twinRestrictedHighlightingFlag.reset()
 								content.halfPairsGraph.chainsFrom(slot)
 							}
 						}
@@ -164,7 +171,6 @@ class SudokuVC(initialState: SudokuState, parentContext: ColorContext)
 				currentHighlightedLinks = Vector()
 		}
 		repaint()
-		None
 	})
 	
 	
@@ -181,28 +187,20 @@ class SudokuVC(initialState: SudokuState, parentContext: ColorContext)
 	 * Starts highlighting specified number
 	 * @param number Number to be highlighted
 	 */
-	def highlightNumber(number: Int) = highlightedNumber = Some(number)
+	def highlightNumber(number: Int) = highlightedNumber = number
 	
 	/**
 	 * Ends highlighting the specified number
 	 * @param number Number to be no longer highlighted
 	 */
-	def endHighlightOfNumber(number: Int) =
-	{
-		if (highlightedNumber.contains(number))
-		{
-			lastHighlightedNumber = number
-			highlightedNumber = None
-		}
-	}
+	def endHighlightOfNumber(number: Int) = highlightedNumberPointer.update { _.filterNot { _ == number } }
 	
 	/**
 	 * Highlights the specified slots in this view
 	 * @param modifiedSlots Slots that were recently modified
 	 * @param relatedSlots Slots that related to modifying
 	 */
-	def highlight(modifiedSlots: Set[Slot], relatedSlots: Set[Slot]) =
-	{
+	def highlight(modifiedSlots: Set[Slot], relatedSlots: Set[Slot]) = {
 		_lastModifiedSlots = modifiedSlots
 		_relatedSlots = relatedSlots
 		remainingHighlightLevel = 1.0
@@ -213,35 +211,30 @@ class SudokuVC(initialState: SudokuState, parentContext: ColorContext)
 	
 	private object HighLightUpdater extends Actor
 	{
-		override def act(duration: FiniteDuration) =
-		{
+		override def handleCondition: FlagLike = highlightedFlag
+		
+		override def act(duration: FiniteDuration) = {
 			val highlightMod = duration / highlightDuration
-			remainingHighlightLevel -= highlightMod
+			remainingHighlightLevelPointer.update { _ - highlightMod }
 			repaint()
 		}
-		
-		override def allowsHandlingFrom(handlerType: HandlerType) = isHighlighted
 	}
 	
 	private object NumberHighLightUpdater extends Actor
 	{
-		override def act(duration: FiniteDuration) =
-		{
+		override val handleCondition: FlagLike =
+			highlightedNumberPointer.mergeWith(numberHighlightLevelPointer) { (highlighted, level) =>
+				if (highlighted.isDefined) level < 1 else level > 0
+			}
+		
+		override def act(duration: FiniteDuration) = {
 			val adjustment = duration / numberHighlightChangeDuration
 			if (highlightedNumber.isDefined)
-				numberHighlightLevel = (numberHighlightLevel + adjustment) min 1
+				numberHighlightLevelPointer.update { l => (l + adjustment) min 1 }
 			else
-				numberHighlightLevel = (numberHighlightLevel - adjustment) max 0
+				numberHighlightLevelPointer.update { l => (l - adjustment) max 0 }
 			
 			repaint()
-		}
-		
-		override def allowsHandlingFrom(handlerType: HandlerType) =
-		{
-			if (highlightedNumber.isDefined)
-				numberHighlightLevel < 1
-			else
-				numberHighlightLevel > 0
 		}
 	}
 	
@@ -249,18 +242,18 @@ class SudokuVC(initialState: SudokuState, parentContext: ColorContext)
 	{
 		// ATTRIBUTES	------------------------
 		
-		private val modifiedColor = colorScheme.secondary.forBackground(backgroundColor)
-		private val relatedColor = colorScheme.primary.forBackground(backgroundColor)
+		private val modifiedColor = colorScheme.secondary.against(backgroundColor)
+		private val relatedColor = colorScheme.primary.against(backgroundColor)
 		
 		
 		// IMPLEMENTED	------------------------
 		
 		override def drawLevel = Normal
 		
-		override def draw(drawer: Drawer, bounds: Bounds) =
-		{
-			if (isHighlighted)
-			{
+		override def opaque: Boolean = false
+		
+		override def draw(drawer: Drawer, bounds: Bounds) = {
+			if (isHighlighted) {
 				// Goes through each modified slot and draws a background for it
 				highlightSlots(drawer, _lastModifiedSlots, modifiedColor)
 				highlightSlots(drawer, _relatedSlots, relatedColor)
@@ -270,17 +263,16 @@ class SudokuVC(initialState: SudokuState, parentContext: ColorContext)
 		
 		// OTHER	----------------------------
 		
-		private def highlightSlots(drawer: Drawer, slots: Set[Slot], color: Color) =
-		{
-			if (slots.nonEmpty)
-				drawer.onlyFill(color.timesAlpha(remainingHighlightLevel)).disposeAfter { d =>
-					gridDisplays.foreach { gridVC =>
-						gridVC.slotDisplays.filter { slotVC => slots.contains(slotVC.content) }.foreach { slotVC =>
-							val bounds = slotVC.bounds + gridVC.position
-							d.draw(bounds)
-						}
+		private def highlightSlots(drawer: Drawer, slots: Set[Slot], color: Color) = {
+			if (slots.nonEmpty) {
+				implicit val ds: DrawSettings = DrawSettings.onlyFill(color.timesAlpha(remainingHighlightLevel))
+				gridDisplays.foreach { gridVC =>
+					gridVC.slotDisplays.filter { slotVC => slots.contains(slotVC.content) }.foreach { slotVC =>
+						val bounds = slotVC.bounds + gridVC.position
+						drawer.draw(bounds)
 					}
 				}
+			}
 		}
 	}
 	
@@ -288,18 +280,17 @@ class SudokuVC(initialState: SudokuState, parentContext: ColorContext)
 	{
 		// ATTRIBUTES	-------------------------
 		
-		private val possibleColor = colorScheme.primary.forBackground(backgroundColor).withAlpha(0.55)
-		private val takenColor = colorScheme.secondary.forBackground(backgroundColor).withAlpha(0.55)
+		private val possibleColor = colorScheme.primary.against(backgroundColor).withAlpha(0.55)
+		private val takenColor = colorScheme.secondary.against(backgroundColor).withAlpha(0.55)
 		
 		
 		// IMPLEMENTED	-------------------------
 		
 		override def drawLevel = Normal
+		override def opaque: Boolean = false
 		
-		override def draw(drawer: Drawer, bounds: Bounds) =
-		{
-			if (numberHighlightLevel > 0)
-			{
+		override def draw(drawer: Drawer, bounds: Bounds) = {
+			if (numberHighlightLevel > 0) {
 				val number = highlightedNumber.getOrElse(lastHighlightedNumber)
 				
 				// Draws the possible slots, then the taken slots
@@ -311,14 +302,12 @@ class SudokuVC(initialState: SudokuState, parentContext: ColorContext)
 		
 		// OTHER	-----------------------------
 		
-		private def highlightSlots(drawer: Drawer, color: Color)(filter: Slot => Boolean) =
-		{
-			drawer.onlyFill(color.timesAlpha(numberHighlightLevel)).disposeAfter { d =>
-				gridDisplays.foreach { gridVC =>
-					gridVC.slotDisplays.filter { slotVC => filter(slotVC.content) }.foreach { slotVC =>
-						val bounds = slotVC.bounds + gridVC.position
-						d.draw(bounds)
-					}
+		private def highlightSlots(drawer: Drawer, color: Color)(filter: Slot => Boolean) = {
+			implicit val ds: DrawSettings = DrawSettings.onlyFill(color.timesAlpha(numberHighlightLevel))
+			gridDisplays.foreach { gridVC =>
+				gridVC.slotDisplays.filter { slotVC => filter(slotVC.content) }.foreach { slotVC =>
+					val bounds = slotVC.bounds + gridVC.position
+					drawer.draw(bounds)
 				}
 			}
 		}
@@ -326,29 +315,28 @@ class SudokuVC(initialState: SudokuState, parentContext: ColorContext)
 	
 	private object LinksDrawer extends CustomDrawer
 	{
-		val color = colorScheme.primary.forBackground(backgroundColor).withAlpha(0.88)
-		val twinsColor = colorScheme.secondary.forBackground(backgroundColor).withAlpha(0.88)
+		private val color = colorScheme.primary.against(backgroundColor).withAlpha(0.88)
+		private val twinsColor = colorScheme.secondary.against(backgroundColor).withAlpha(0.88)
+		
+		private val colorPointer = twinRestrictedHighlightingFlag.map { if (_) twinsColor else color }
+		private val dsPointer = colorPointer.map { StrokeSettings(_, 4).toDrawSettings }
 		
 		override def drawLevel = Normal
+		override def opaque: Boolean = false
 		
-		override def draw(drawer: Drawer, bounds: Bounds) =
-		{
-			if (currentHighlightedLinks.nonEmpty)
-			{
+		override def draw(drawer: Drawer, bounds: Bounds) = {
+			if (currentHighlightedLinks.nonEmpty) {
 				// Draws a line from each chain link to the next step
-				drawer.onlyEdges(if (highlightIsTwinRestricted) twinsColor else color).withStroke(4).disposeAfter { d =>
-					currentHighlightedLinks.foreach { case (first, second) =>
-						val origin = slotPositionToPixels(first.position, bounds)
-						val target = slotPositionToPixels(second.position, bounds)
-						d.draw(Line(origin, target))
-					}
+				implicit val ds: DrawSettings = dsPointer.value
+				currentHighlightedLinks.foreach { link =>
+					val origin = slotPositionToPixels(link.first.position, bounds)
+					val target = slotPositionToPixels(link.second.position, bounds)
+					drawer.draw(Line(origin, target))
 				}
 			}
 		}
 		
-		def slotPositionToPixels(position: Position, bounds: Bounds) =
-		{
-			bounds.position + (Vector3D(position.x, position.y) / 9 * bounds.size) + bounds.size / 18
-		}
+		private def slotPositionToPixels(position: Position, bounds: Bounds) =
+			bounds.position + (Vector2D(position.x, position.y) / 9 * bounds.size) + bounds.size / 18
 	}
 }

@@ -2,21 +2,24 @@ package sudoku.view
 
 import sudoku.controller.Solver
 import sudoku.model.SudokuState
-import utopia.genesis.event.MouseMoveEvent
-import utopia.genesis.handling.MouseMoveListener
-import utopia.inception.handling.immutable.Handleable
-import utopia.reflection.component.Area
-import utopia.reflection.component.context.ColorContext
-import utopia.reflection.component.drawing.immutable.BorderDrawer
-import utopia.reflection.component.swing.StackableAwtComponentWrapperWrapper
+import utopia.firmament.context.ColorContext
+import utopia.firmament.drawing.immutable.BorderDrawer
+import utopia.firmament.localization.LocalString._
+import utopia.firmament.model.Border
+import utopia.firmament.model.enumeration.StackLayout.Trailing
+import utopia.firmament.model.stack.LengthExtensions._
+import utopia.firmament.model.stack.modifier.SymmetricSizeModifier
+import utopia.flow.operator.filter.{AcceptAll, Filter}
+import utopia.flow.view.immutable.eventful.AlwaysTrue
+import utopia.flow.view.template.eventful.FlagLike
+import utopia.genesis.handling.event.mouse.{MouseMoveEvent, MouseMoveListener}
+import utopia.paradigm.color.ColorRole.{Primary, Secondary}
+import utopia.paradigm.shape.shape2d.area.polygon.c4.bounds.HasBounds
 import utopia.reflection.component.swing.button.TextButton
 import utopia.reflection.component.swing.label.TextLabel
-import utopia.reflection.container.stack.StackLayout.Trailing
-import utopia.reflection.container.swing.{AwtContainerRelated, Stack}
-import utopia.reflection.shape.{Border, SymmetricStackSizeConstraint}
-import utopia.reflection.shape.LengthExtensions._
-import utopia.reflection.localization.LocalString._
-import utopia.reflection.shape.Alignment.Center
+import utopia.reflection.component.swing.template.StackableAwtComponentWrapperWrapper
+import utopia.reflection.container.swing.AwtContainerRelated
+import utopia.reflection.container.swing.layout.multi.Stack
 
 /**
  * This view controller is used for handling the whole puzzle
@@ -31,10 +34,10 @@ class MainVC(initialSudoku: SudokuState) extends StackableAwtComponentWrapperWra
 	
 	private implicit val languageCode: String = "en"
 	private val bgColor = colorScheme.primary
-	private implicit val context: ColorContext = baseContext.inContextWithBackground(bgColor)
+	private implicit val context: ColorContext = baseContext.against(bgColor)
 	
 	private val sudokuVC = new SudokuVC(initialSudoku, context)
-	private val solveNextButton = context.forTextComponents(Center).forSecondaryColorButtons.use { implicit btnC =>
+	private val solveNextButton = (context.forTextComponents.withCenteredText/Secondary).use { implicit btnC =>
 		TextButton.contextual("Next") {
 			val result = Solver(currentSudoku)
 			if (result.wasSuccess)
@@ -47,14 +50,14 @@ class MainVC(initialSudoku: SudokuState) extends StackableAwtComponentWrapperWra
 				println("Can't solve next :(")
 		}
 	}
-	private val numberButtons = context.forTextComponents(Center).forPrimaryColorButtons.use { implicit btnC =>
+	private val numberButtons = (context.forTextComponents.withCenteredText/Primary).use { implicit btnC =>
 		
-		val borderDrawer = new BorderDrawer(Border.raised(2, btnC.buttonColor, 0.25))
+		val borderDrawer = BorderDrawer(Border.raised(2, btnC.background, 0.25))
 		
 		(1 to 9).map { number =>
-			val label = TextLabel.contextualWithBackground(btnC.buttonColor, number.toString.noLanguageLocalizationSkipped)
+			val label = TextLabel.contextualWithBackground(btnC.background, number.toString.noLanguageLocalizationSkipped)
 			label.addCustomDrawer(borderDrawer)
-			label.addConstraint(SymmetricStackSizeConstraint)
+			label.addConstraint(SymmetricSizeModifier)
 			label.addMouseMoveListener(new NumberHoverListener(label, number))
 			label
 		}
@@ -81,14 +84,16 @@ class MainVC(initialSudoku: SudokuState) extends StackableAwtComponentWrapperWra
 	
 	// NESTED	----------------------------
 	
-	private class NumberHoverListener(component: Area, number: Int) extends MouseMoveListener with Handleable
+	private class NumberHoverListener(component: HasBounds, number: Int) extends MouseMoveListener
 	{
-		override def onMouseMove(event: MouseMoveEvent) =
-		{
+		override def mouseMoveEventFilter: Filter[MouseMoveEvent] = AcceptAll
+		override def handleCondition: FlagLike = AlwaysTrue
+		
+		override def onMouseMove(event: MouseMoveEvent) = {
 			val bounds = component.bounds
-			if (event.enteredArea(bounds))
+			if (event.entered(bounds))
 				sudokuVC.highlightNumber(number)
-			else if (event.exitedArea(bounds))
+			else if (event.exited(bounds))
 				sudokuVC.endHighlightOfNumber(number)
 		}
 	}

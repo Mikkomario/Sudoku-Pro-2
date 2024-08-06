@@ -1,6 +1,7 @@
 package sudoku.model
 
-import utopia.flow.util.CollectionExtensions._
+import utopia.flow.collection.CollectionExtensions._
+import utopia.flow.collection.immutable.Pair
 
 object Grid extends GridFactory[Slot, Grid]
 
@@ -30,7 +31,7 @@ case class Grid(slots: Vector[Slot]) extends GridLike[Slot, Grid] with FullSlots
 	{
 		val rowSeparator = Iterator.fill(sideLength)("-").mkString("+")
 		val rowStrings = rows.map { row => row.map { _.ascii }.mkString("|") }
-		rowStrings.paired.flatMap { case (first, _) => Vector(first, rowSeparator) } :+ rowStrings.last
+		rowStrings.paired.flatMap { case Pair(first, _) => Vector(first, rowSeparator) } :+ rowStrings.last
 	}
 	
 	

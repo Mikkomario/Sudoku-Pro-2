@@ -1,6 +1,6 @@
 package sudoku.model
 
-import utopia.reflection.localization.LocalString
+import utopia.firmament.localization.LocalString
 
 /**
  * An enumeration for different types of solvable groups

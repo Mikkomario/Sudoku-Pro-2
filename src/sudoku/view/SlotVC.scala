@@ -2,19 +2,21 @@ package sudoku.view
 
 import sudoku.model.SolvableGroupType.{Column, Grid, Row}
 import sudoku.model.{Slot, SolvableGroupType}
-import utopia.genesis.color.Color
-import utopia.reflection.component.RefreshableWithPointer
-import utopia.reflection.component.context.ColorContext
-import utopia.reflection.component.drawing.immutable.TextDrawContext
-import utopia.reflection.component.drawing.template.DrawLevel.Normal
-import utopia.reflection.component.drawing.template.TextDrawer
-import utopia.reflection.component.swing.StackableAwtComponentWrapperWrapper
+import utopia.firmament.component.display.RefreshableWithPointer
+import utopia.firmament.context.ColorContext
+import utopia.firmament.drawing.template.TextDrawerLike
+import utopia.firmament.localization.DisplayFunction
+import utopia.firmament.localization.LocalString._
+import utopia.firmament.model.stack.LengthExtensions._
+import utopia.firmament.model.stack.StackInsets
+import utopia.genesis.graphics.DrawLevel.Normal
+import utopia.genesis.graphics.MeasuredText
+import utopia.genesis.text.Font
+import utopia.paradigm.color.Color
+import utopia.paradigm.enumeration.Alignment
+import utopia.paradigm.enumeration.Alignment.{BottomLeft, Center, TopLeft, TopRight}
 import utopia.reflection.component.swing.label.ItemLabel
-import utopia.reflection.localization.{DisplayFunction, LocalizedString}
-import utopia.reflection.shape.StackInsets
-import utopia.reflection.shape.LengthExtensions._
-import utopia.reflection.localization.LocalString._
-import utopia.reflection.shape.Alignment.{BottomLeft, Center, TopLeft, TopRight}
+import utopia.reflection.component.swing.template.StackableAwtComponentWrapperWrapper
 
 object SlotVC
 {
@@ -31,7 +33,7 @@ object SlotVC
 	def makeNumberLabel[A](firstItem: A, displayFunction: DisplayFunction[A] = DisplayFunction.raw)
 						  (implicit context: ColorContext) =
 	{
-		context.forTextComponents(Center, textInsets = StackInsets.symmetric(margins.medium.upscaling)).use { implicit txtC =>
+		context.forTextComponents.withCenteredText.withTextInsets(StackInsets.symmetric(margins.medium.upscaling)).use { implicit txtC =>
 			val label = ItemLabel.contextual(firstItem, displayFunction)
 			label.addCustomDrawer(borderSettings.slotBorderDrawer)
 			label
@@ -96,57 +98,62 @@ class SlotVC(initialSlot: Slot)(implicit parentContext: ColorContext)
 	
 	// NESTED	------------------------------
 	
-	object AvailableNumbersDrawer extends TextDrawer
+	private object AvailableNumbersDrawer extends TextDrawerLike
 	{
-		override val drawContext = TextDrawContext(parentContext.defaultFont * 0.5, alignment = Center)
+		override lazy val font: Font = parentContext.font * 0.5
 		
-		override def text =
-		{
-			if (content.isSolved)
-				LocalizedString.empty
-			else
-			{
-				val numbers = content.availableNumbers
-				if (numbers.size >= 9)
-					LocalizedString.empty
-				else if (numbers.size > 3)
-					"...".noLanguageLocalizationSkipped
-				else
-					numbers.toVector.sorted.mkString("").noLanguageLocalizationSkipped
-			}
-		}
+		override def insets: StackInsets = StackInsets.any
+		override def color: Color = Color.textBlack
+		override def alignment: Alignment = Center
 		
 		override def drawLevel = Normal
-	}
-	
-	class HalfPlaceDrawer(targetGroupType: SolvableGroupType) extends TextDrawer
-	{
-		override val drawContext =
-		{
-			val font = parentContext.defaultFont * 0.5
-			val insets = StackInsets.symmetric(margins.small.any)
-			targetGroupType match
-			{
-				case Grid => TextDrawContext(font, Color.green.darkened(2), TopLeft, insets)
-				case Row => TextDrawContext(font, Color.blue, BottomLeft, insets)
-				case Column => TextDrawContext(font, Color.red, TopRight, insets)
-			}
-		}
 		
-		override def text =
-		{
-			if (content.isSolved)
-				LocalizedString.empty
-			else
-			{
-				content.halfPlaceFor.get(targetGroupType) match
-				{
-					case Some(numbers) => numbers.toVector.sorted.mkString("").noLanguageLocalizationSkipped
-					case None => LocalizedString.empty
+		override def text = {
+			val text = {
+				if (content.isSolved)
+					""
+				else {
+					val numbers = content.availableNumbers
+					if (numbers.size >= 9)
+						""
+					else if (numbers.size > 3)
+						"..."
+					else
+						numbers.toVector.sorted.mkString("")
 				}
 			}
+			MeasuredText(text, fontMetricsWith(font), Center)
+		}
+	}
+	
+	private class HalfPlaceDrawer(targetGroupType: SolvableGroupType) extends TextDrawerLike
+	{
+		override lazy val font: Font = parentContext.font * 0.5
+		override lazy val insets: StackInsets = StackInsets.symmetric(margins.small.any)
+		override lazy val color: Color = targetGroupType match {
+			case Grid => Color.green.darkenedBy(2)
+			case Row => Color.blue
+			case Column => Color.red
+		}
+		override lazy val alignment: Alignment = targetGroupType match {
+			case Grid => TopLeft
+			case Row => BottomLeft
+			case Column => TopRight
 		}
 		
 		override def drawLevel = Normal
+		
+		override def text = {
+			val text = {
+				if (content.isSolved)
+					""
+				else
+					content.halfPlaceFor.get(targetGroupType) match {
+						case Some(numbers) => numbers.toVector.sorted.mkString("")
+						case None => ""
+					}
+			}
+			MeasuredText(text, fontMetricsWith(font), alignment)
+		}
 	}
 }

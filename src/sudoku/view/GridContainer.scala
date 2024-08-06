@@ -1,16 +1,16 @@
 package sudoku.view
 
-import scala.math.Ordering.Double.TotalOrdering
-
-import utopia.genesis.shape.shape2D.{Bounds, Point}
-import utopia.reflection.component.AreaOfItems
-import utopia.reflection.component.drawing.mutable.CustomDrawableWrapper
-import utopia.reflection.component.stack.CachingStackable
-import utopia.reflection.component.swing.{AwtComponentWrapperWrapper, SwingComponentRelated}
-import utopia.reflection.container.stack.MultiStackContainer
+import utopia.firmament.component.AreaOfItems
+import utopia.firmament.drawing.mutable.MutableCustomDrawableWrapper
+import utopia.firmament.model.stack.{StackLength, StackSize}
+import utopia.paradigm.shape.shape2d.area.polygon.c4.bounds.Bounds
+import utopia.paradigm.shape.shape2d.vector.Vector2D
+import utopia.paradigm.shape.shape2d.vector.point.Point
+import utopia.reflection.component.swing.template.{AwtComponentWrapperWrapper, SwingComponentRelated}
+import utopia.reflection.component.template.layout.stack.CachingReflectionStackable
+import utopia.reflection.container.stack.template.MultiStackContainer
+import utopia.reflection.container.swing.layout.multi.Stack.AwtStackable
 import utopia.reflection.container.swing.{AwtContainerRelated, Panel}
-import utopia.reflection.container.swing.Stack.AwtStackable
-import utopia.reflection.shape.{StackLength, StackSize}
 
 /**
  * Displays components as a symmetric grid
@@ -18,8 +18,8 @@ import utopia.reflection.shape.{StackLength, StackSize}
  * @since 22.4.2020, v1
  */
 class GridContainer[C <: AwtStackable] extends MultiStackContainer[C]
-	with AwtComponentWrapperWrapper with AwtContainerRelated with SwingComponentRelated with CustomDrawableWrapper
-	with CachingStackable with AreaOfItems[C]
+	with AwtComponentWrapperWrapper with AwtContainerRelated with SwingComponentRelated with MutableCustomDrawableWrapper
+	with CachingReflectionStackable with AreaOfItems[C]
 {
 	// ATTRIBUTES	----------------------------
 	
@@ -56,16 +56,16 @@ class GridContainer[C <: AwtStackable] extends MultiStackContainer[C]
 		comps.indices.foreach { i =>
 			val x = i % componentsPerLine
 			val y = i / componentsPerLine
-			comps(i).bounds = Bounds(componentSize.toPoint * (x, y), componentSize)
+			comps(i).bounds = Bounds(componentSize.toPoint * Vector2D(x, y), componentSize)
 		}
 	}
 	
-	override protected def updateVisibility(visible: Boolean) = super[AwtComponentWrapperWrapper].isVisible_=(visible)
+	override protected def updateVisibility(visible: Boolean) = super[AwtComponentWrapperWrapper].visible_=(visible)
 	
 	override def calculatedStackSize =
 	{
 		// Each component will be scaled to similar symmetric size so the longest stack length is used
-		val lengths = components.flatMap { _.stackSize.components }
+		val lengths = components.flatMap { _.stackSize.dimensions }
 		if (lengths.isEmpty)
 			StackSize.any
 		else
@@ -88,9 +88,8 @@ class GridContainer[C <: AwtStackable] extends MultiStackContainer[C]
 		}
 	}
 	
-	override protected def add(component: C, index: Int) = panel.insert(component, index)
-	
-	override protected def remove(component: C) = panel -= component
+	override protected def addToContainer(component: C, index: Int): Unit = panel.insert(component, index)
+	override protected def removeFromContainer(component: C): Unit = panel -= component
 	
 	override def components = panel.components
 }

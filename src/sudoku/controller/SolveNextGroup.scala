@@ -1,7 +1,7 @@
 package sudoku.controller
 
 import sudoku.model.{FullSlotsGroup, Slot, SudokuState}
-import utopia.genesis.shape.Axis2D
+import utopia.paradigm.enumeration.Axis2D
 
 /**
  * A common trait for algorithms that target all slot group types independently and stop the modifications after

@@ -2,8 +2,8 @@ package sudoku.controller
 
 import sudoku.model.SolvableGroupType.{Column, Grid, Row}
 import sudoku.model._
-import utopia.genesis.shape.Axis.{X, Y}
-import utopia.genesis.shape.Axis2D
+import utopia.paradigm.enumeration.Axis.{X, Y}
+import utopia.paradigm.enumeration.Axis2D
 
 /**
  * A common trait for algorithms that target all slot group types independently

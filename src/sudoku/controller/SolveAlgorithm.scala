@@ -1,7 +1,7 @@
 package sudoku.controller
 
 import sudoku.model.{SolveResult, SudokuState}
-import utopia.reflection.localization.LocalString
+import utopia.firmament.localization.LocalString
 
 /**
  * An enumeration for different sudoku solve steps / methods

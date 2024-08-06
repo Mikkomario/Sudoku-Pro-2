@@ -1,7 +1,7 @@
 package sudoku.model
 
-import utopia.genesis.shape.Axis.{X, Y}
-import utopia.genesis.shape.Axis2D
+import utopia.paradigm.enumeration.Axis.{X, Y}
+import utopia.paradigm.enumeration.Axis2D
 
 /**
  * A common trait for objects used for creating grids

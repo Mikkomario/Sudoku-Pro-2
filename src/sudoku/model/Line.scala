@@ -1,6 +1,6 @@
 package sudoku.model
 
-import utopia.flow.util.Equatable
+import utopia.flow.operator.equality.EqualsBy
 
 import scala.language.implicitConversions
 
@@ -22,11 +22,11 @@ object Line
  * @author Mikko Hilpinen
  * @since 24.4.2020, v1
  */
-class Line[+A <: Solvable](val items: Vector[A]) extends Solvable with Equatable
+class Line[+A <: Solvable](val items: Vector[A]) extends Solvable with EqualsBy
 {
 	// IMPLEMENTED	--------------------
 	
-	override def properties = items
+	override protected def equalsProperties: Seq[Any] = items
 	
 	override def isSolved = items.forall { _.isSolved }
 }

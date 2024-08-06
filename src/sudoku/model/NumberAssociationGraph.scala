@@ -2,8 +2,8 @@ package sudoku.model
 
 import sudoku.model.SolvableGroupType.{Column, Row}
 import sudoku.util.MultiMapBuilder
-import utopia.flow.datastructure.immutable.Graph
-import utopia.flow.util.CollectionExtensions._
+import utopia.flow.collection.immutable.{Graph, Pair}
+import utopia.flow.collection.CollectionExtensions._
 
 object NumberAssociationGraph
 {
@@ -34,8 +34,8 @@ object NumberAssociationGraph
 		// Creates a graph based on grouped slots by recording a two-way connection between all group slots
 		// (one slot will belong to multiple groups so each will have three types of connections)
 		val graphsByCategory = groupSlotBuilders.map { case (gType, builder) =>
-			(gType: SolvableGroupType) -> Graph.twoWayBound(builder.result().valuesIterator.flatten.toVector.paired.map { case (a, b) =>
-				(a, gType: SolvableGroupType, b) }.toSet) }
+			(gType: SolvableGroupType) -> Graph.twoWayBound(builder.result().valuesIterator.flatten.toVector.paired
+				.map { case Pair(a, b) => (a, gType: SolvableGroupType, b) }.toSet) }
 		
 		new NumberAssociationGraph(graphsByCategory)
 	}
@@ -58,7 +58,7 @@ case class NumberAssociationGraph private(graphs: Map[SolvableGroupType, Graph[S
 	 * @param targetSlot Target slot
 	 * @return All empty nodes that are associated with the specified slot
 	 */
-	def slotsAssociatedWith(targetSlot: Slot) = graph(targetSlot).endNodes.map { _.content } - targetSlot
+	def slotsAssociatedWith(targetSlot: Slot) = graph(targetSlot).endNodes.map { _.value }.toSet - targetSlot
 	
 	/**
 	 * Finds all slots that are associated with ALL of the specified slots (excluding the slots themselves)

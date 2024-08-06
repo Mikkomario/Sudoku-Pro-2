@@ -2,9 +2,9 @@ package sudoku.controller
 
 import sudoku.model.{Position, SolveResult, SudokuState}
 import sudoku.util.MultiMapBuilder
-import utopia.flow.util.CollectionExtensions._
-import utopia.genesis.shape.Axis.{X, Y}
-import utopia.genesis.shape.Axis2D
+import utopia.flow.collection.CollectionExtensions._
+import utopia.paradigm.enumeration.Axis.{X, Y}
+import utopia.paradigm.enumeration.Axis2D
 
 object XWing
 {
@@ -33,9 +33,11 @@ class XWing(axis: Axis2D) extends SolveAlgorithm
 		val pairsBuilder = new MultiMapBuilder[(Int, Int, Int), Int]
 		lines.foreachWithIndex { (line, perpendicularIndex) =>
 			// Number -> Number's indices in this line
-			val alignedIndicesPerNumber = line.slots.mapWithIndex { (slot, alignedIndex) =>
-				slot.halfPlacesFor(axis).map { number => number -> alignedIndex }
-			}.flatten.toVector.asMultiMap
+			val alignedIndicesPerNumber = line.slots.zipWithIndex
+				.flatMap { case (slot, alignedIndex) =>
+					slot.halfPlacesFor(axis).map { number => number -> alignedIndex }
+				}
+				.groupMap { _._1 } { _._2 }
 			
 			// Adds the found pairs to the map
 			alignedIndicesPerNumber.foreach { case (number, alignedIndices) =>

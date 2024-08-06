@@ -2,10 +2,10 @@ package sudoku.view
 
 import sudoku.controller.Solver
 import sudoku.model.{Grid, Position, Slot, SudokuState}
-import utopia.flow.util.CollectionExtensions._
-import utopia.genesis.generic.GenesisDataType
+import utopia.firmament.model.enumeration.WindowResizePolicy.Program
+import utopia.flow.collection.CollectionExtensions._
+import utopia.paradigm.generic.ParadigmDataType
 import utopia.reflection.container.swing.window.Frame
-import utopia.reflection.container.swing.window.WindowResizePolicy.Program
 import utopia.reflection.util.SingleFrameSetup
 
 /**
@@ -15,7 +15,7 @@ import utopia.reflection.util.SingleFrameSetup
  */
 object SudokuProApp extends App
 {
-	GenesisDataType.setup()
+	ParadigmDataType.setup()
 	
 	import DefaultContext._
 	

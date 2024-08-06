@@ -1,8 +1,8 @@
 package sudoku.model
 
 import sudoku.model.SolvableGroupType.{Column, Row}
-import utopia.genesis.shape.Axis.{X, Y}
-import utopia.genesis.shape.Axis2D
+import utopia.paradigm.enumeration.Axis.{X, Y}
+import utopia.paradigm.enumeration.Axis2D
 
 /**
  * Slot has a specific position on the sudoku and it may contain a number

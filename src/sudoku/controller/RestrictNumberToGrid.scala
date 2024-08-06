@@ -1,8 +1,8 @@
 package sudoku.controller
 
-import utopia.flow.util.CollectionExtensions._
+import utopia.flow.collection.CollectionExtensions._
 import sudoku.model.{SolveResult, SudokuState}
-import utopia.genesis.shape.Axis2D
+import utopia.paradigm.enumeration.Axis2D
 
 /**
  * Test whether available grid number slots align themselves in a way that locks out the possibility of the

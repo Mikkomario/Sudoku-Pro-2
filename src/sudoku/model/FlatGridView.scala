@@ -1,7 +1,7 @@
 package sudoku.model
 
-import utopia.genesis.shape.Axis.{X, Y}
-import utopia.genesis.shape.Axis2D
+import utopia.paradigm.enumeration.Axis.{X, Y}
+import utopia.paradigm.enumeration.Axis2D
 
 /**
  * Views a grid of grids as a larger grid of the internal grids' items
