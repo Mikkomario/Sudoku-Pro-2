@@ -10,7 +10,7 @@ import utopia.firmament.model.stack.LengthExtensions._
 import utopia.firmament.model.stack.modifier.SymmetricSizeModifier
 import utopia.flow.operator.filter.{AcceptAll, Filter}
 import utopia.flow.view.immutable.eventful.AlwaysTrue
-import utopia.flow.view.template.eventful.FlagLike
+import utopia.flow.view.template.eventful.Flag
 import utopia.genesis.handling.event.mouse.{MouseMoveEvent, MouseMoveListener}
 import utopia.paradigm.color.ColorRole.{Primary, Secondary}
 import utopia.paradigm.shape.shape2d.area.polygon.c4.bounds.HasBounds
@@ -86,7 +86,7 @@ class MainVC(initialSudoku: SudokuState) extends StackableAwtComponentWrapperWra
 	private class NumberHoverListener(component: HasBounds, number: Int) extends MouseMoveListener
 	{
 		override def mouseMoveEventFilter: Filter[MouseMoveEvent] = AcceptAll
-		override def handleCondition: FlagLike = AlwaysTrue
+		override def handleCondition: Flag = AlwaysTrue
 		
 		override def onMouseMove(event: MouseMoveEvent) = {
 			val bounds = component.bounds

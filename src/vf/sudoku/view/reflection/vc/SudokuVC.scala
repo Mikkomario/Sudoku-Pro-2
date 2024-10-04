@@ -1,7 +1,5 @@
 package vf.sudoku.view.reflection.vc
 
-import vf.sudoku.model.grid.{Coordinate, Slot}
-import vf.sudoku.view.reflection.DefaultContext._
 import utopia.firmament.component.display.RefreshableWithPointer
 import utopia.firmament.context.ColorContext
 import utopia.firmament.controller.data.ContainerContentDisplayer
@@ -11,7 +9,7 @@ import utopia.flow.collection.CollectionExtensions._
 import utopia.flow.collection.immutable.Pair
 import utopia.flow.time.TimeExtensions._
 import utopia.flow.view.mutable.eventful.{EventfulPointer, ResettableFlag}
-import utopia.flow.view.template.eventful.FlagLike
+import utopia.flow.view.template.eventful.Flag
 import utopia.genesis.graphics.DrawLevel.Normal
 import utopia.genesis.graphics.{DrawSettings, Drawer, StrokeSettings}
 import utopia.genesis.handling.action.Actor
@@ -23,8 +21,9 @@ import utopia.paradigm.shape.shape2d.area.polygon.c4.bounds.Bounds
 import utopia.paradigm.shape.shape2d.line.Line
 import utopia.paradigm.shape.shape2d.vector.Vector2D
 import utopia.reflection.component.swing.template.StackableAwtComponentWrapperWrapper
-import vf.sudoku.model.grid.Slot
+import vf.sudoku.model.grid.{Coordinate, Slot}
 import vf.sudoku.model.solve.SudokuState
+import vf.sudoku.view.reflection.DefaultContext._
 import vf.sudoku.view.reflection.{GridContainer, SelectNumberPopUp}
 
 import scala.concurrent.duration.FiniteDuration
@@ -53,7 +52,7 @@ class SudokuVC(initialState: SudokuState, parentContext: ColorContext)
 	val contentPointer = EventfulPointer[SudokuState](initialState)
 	private val gridsPointer = contentPointer.map { _.grids }
 	
-	private val highlightedNumberPointer = EventfulPointer.empty[Int]()
+	private val highlightedNumberPointer = EventfulPointer.empty[Int]
 	private val lastHighlightedNumberPointer =
 		highlightedNumberPointer.incrementalMap { _.getOrElse(1) } { (prev, event) => event.oldValue.getOrElse(prev) }
 	
@@ -214,7 +213,7 @@ class SudokuVC(initialState: SudokuState, parentContext: ColorContext)
 	
 	private object HighLightUpdater extends Actor
 	{
-		override def handleCondition: FlagLike = highlightedFlag
+		override def handleCondition: Flag = highlightedFlag
 		
 		override def act(duration: FiniteDuration) = {
 			val highlightMod = duration / highlightDuration
@@ -225,7 +224,7 @@ class SudokuVC(initialState: SudokuState, parentContext: ColorContext)
 	
 	private object NumberHighLightUpdater extends Actor
 	{
-		override val handleCondition: FlagLike =
+		override val handleCondition: Flag =
 			highlightedNumberPointer.mergeWith(numberHighlightLevelPointer) { (highlighted, level) =>
 				if (highlighted.isDefined) level < 1 else level > 0
 			}
